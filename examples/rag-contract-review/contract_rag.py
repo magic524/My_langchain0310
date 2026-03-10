@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Simple RAG pipeline for contract review (DOCX with comments).
+"""Simple RAG pipeline for contract review (DOCX with comments).0
 
 Features:
 - Convert Windows path (e.g. E:\\...) to WSL-style path (/mnt/e/...)

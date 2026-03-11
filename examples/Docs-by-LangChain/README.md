@@ -20,6 +20,7 @@
 
 - `.docx` 正文提取优先使用 `langchain_community.document_loaders.Docx2txtLoader`（即文档里提到的用法）
 - 批注和修订痕迹仍通过解析 Word XML 提取，因为 `Docx2txtLoader` 主要覆盖正文文本
+- `.doc` 优先尝试通过 Windows 本机 Word 或 LibreOffice 转成 `.docx` 后再解析；仅在这些方式都不可用时，才回退到 `strings` 做尽力提取
 
 ## 文件说明
 
@@ -128,7 +129,7 @@ new-contract.docx.review.md
 有两个限制需要提前说明：
 
 1. `.docx` 是完整支持路径，可以提取正文、批注和一部分修订痕迹。
-2. `.doc` 是尽力读取模式，当前通过系统 `strings` 命令抽取可读文本，适合初步探索，不适合高精度生产场景。
+2. `.doc` 建议在 Windows 上配合已安装的 Microsoft Word 和 `pywin32` 使用；若没有 Word，也可尝试安装 LibreOffice 并确保 `soffice` 可执行。只有这些方式都不可用时，才会退回 `strings` 粗提取，精度较低。
 
 如果后续要升级到完整版本，建议下一步做：
 

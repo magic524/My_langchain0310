@@ -15,11 +15,14 @@
 from __future__ import annotations
 
 import argparse
+import importlib
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 import xml.etree.ElementTree as ET
 from collections import Counter
@@ -84,6 +87,30 @@ class ParsedWordFile:
     revisions: list[str]
 
 
+@dataclass(slots=True)
+class RuntimeConfig:
+    """运行时模型配置。"""
+
+    model_name: str
+    model_provider: str
+    temperature: float
+    api_key: str
+    base_url: str | None
+    extra_body: dict[str, Any] | None
+
+
+@dataclass(slots=True)
+class KnowledgeBaseParseResult:
+    """知识库解析结果。"""
+
+    parsed_files: list[ParsedWordFile]
+    skipped_files: list[Path]
+
+
+class DocExtractionUnavailableError(RuntimeError):
+    """当前环境无法解析旧版 `.doc` 文件。"""
+
+
 def windows_to_wsl(path_str: str) -> str:
     """把 Windows 路径转换成 WSL 路径。"""
     if path_str.startswith("/"):
@@ -96,16 +123,61 @@ def windows_to_wsl(path_str: str) -> str:
     return normalized
 
 
-def configure_runtime_env() -> str:
-    """加载 `.env` 并兼容 OpenAI 风格环境变量。"""
+def normalize_path_for_current_os(path_str: str) -> str:
+    """按当前操作系统规范化输入路径字符串。"""
+    if os.name == "nt":
+        return path_str
+    return windows_to_wsl(path_str)
+
+
+def _parse_json_env(env_name: str) -> dict[str, Any] | None:
+    raw_value = os.getenv(env_name)
+    if not raw_value:
+        return None
+
+    try:
+        parsed = json.loads(raw_value)
+    except json.JSONDecodeError as exc:
+        msg = f"环境变量 {env_name} 不是合法 JSON：{exc}"
+        raise ValueError(msg) from exc
+
+    if not isinstance(parsed, dict):
+        msg = f"环境变量 {env_name} 必须是 JSON 对象。"
+        raise ValueError(msg)
+    return parsed
+
+
+def _parse_temperature(raw_value: str | None, *, default: float) -> float:
+    if raw_value is None or not raw_value.strip():
+        return default
+
+    try:
+        return float(raw_value)
+    except ValueError as exc:
+        msg = f"环境变量 OPENAI_TEMPERATURE 不是合法数字：{raw_value}"
+        raise ValueError(msg) from exc
+
+
+def configure_runtime_env() -> RuntimeConfig:
+    """加载 `.env` 并构造 OpenAI 兼容模型配置。"""
     load_dotenv(find_dotenv())
 
     model_name = os.getenv("OPENAI_LLM_MODEL")
+    model_provider = os.getenv("OPENAI_MODEL_PROVIDER", "openai")
     openai_api_base = os.getenv("OPENAI_API_BASE")
+    openai_api_key = os.getenv("OPENAI_API_KEY")
     dashscope_api_key = os.getenv("DASHSCOPE_API_KEY")
+    extra_body = _parse_json_env("OPENAI_EXTRA_BODY")
+    temperature = _parse_temperature(os.getenv("OPENAI_TEMPERATURE"), default=0.0)
 
-    if dashscope_api_key and not os.getenv("OPENAI_API_KEY"):
-        os.environ["OPENAI_API_KEY"] = dashscope_api_key
+    if dashscope_api_key and not openai_api_key:
+        openai_api_key = dashscope_api_key
+
+    if openai_api_base and not openai_api_key:
+        openai_api_key = "EMPTY"
+
+    if openai_api_key:
+        os.environ["OPENAI_API_KEY"] = openai_api_key
 
     if openai_api_base:
         os.environ.setdefault("OPENAI_API_BASE", openai_api_base)
@@ -114,10 +186,14 @@ def configure_runtime_env() -> str:
     if not model_name:
         model_name = "qwen-plus"
 
-    if ":" not in model_name:
-        model_name = f"openai:{model_name}"
-
-    return model_name
+    return RuntimeConfig(
+        model_name=model_name,
+        model_provider=model_provider,
+        temperature=temperature,
+        api_key=openai_api_key or "EMPTY",
+        base_url=openai_api_base,
+        extra_body=extra_body,
+    )
 
 
 def infer_file_role(path: Path, root_dir: Path) -> str:
@@ -235,15 +311,117 @@ def _looks_meaningful_text(line: str) -> bool:
     return len(meaningful) >= max(5, len(line) // 4)
 
 
+def _convert_doc_to_docx_with_word(path: Path) -> Path | None:
+    if os.name != "nt":
+        return None
+
+    try:
+        pythoncom = importlib.import_module("pythoncom")
+        win32com_client = importlib.import_module("win32com.client")
+    except ImportError:
+        return None
+
+    temp_dir = Path(tempfile.mkdtemp(prefix="contract-review-doc-"))
+    docx_path = temp_dir / f"{path.stem}.docx"
+    word = None
+    document = None
+    pythoncom.CoInitialize()
+    try:
+        word = win32com_client.DispatchEx("Word.Application")
+        word.Visible = False
+        word.DisplayAlerts = 0
+        document = word.Documents.Open(str(path), ReadOnly=True)
+        document.SaveAs(str(docx_path), FileFormat=16)
+        return docx_path
+    except Exception:
+        if docx_path.exists():
+            docx_path.unlink(missing_ok=True)
+        temp_dir.rmdir()
+        return None
+    finally:
+        if document is not None:
+            document.Close(False)
+        if word is not None:
+            word.Quit()
+        pythoncom.CoUninitialize()
+
+
+def _convert_doc_to_docx_with_soffice(path: Path) -> Path | None:
+    soffice_cmd = shutil.which("soffice")
+    if soffice_cmd is None:
+        return None
+
+    temp_dir = Path(tempfile.mkdtemp(prefix="contract-review-doc-"))
+    completed = subprocess.run(
+        [
+            soffice_cmd,
+            "--headless",
+            "--convert-to",
+            "docx",
+            "--outdir",
+            str(temp_dir),
+            str(path),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if completed.returncode != 0:
+        temp_dir.rmdir()
+        return None
+
+    docx_path = temp_dir / f"{path.stem}.docx"
+    if not docx_path.exists():
+        temp_dir.rmdir()
+        return None
+    return docx_path
+
+
+def _extract_doc_via_converted_docx(path: Path, role: str) -> ParsedWordFile | None:
+    converted_path = _convert_doc_to_docx_with_word(path)
+    if converted_path is None:
+        converted_path = _convert_doc_to_docx_with_soffice(path)
+    if converted_path is None:
+        return None
+
+    try:
+        parsed = extract_docx(converted_path, role)
+    finally:
+        converted_path.unlink(missing_ok=True)
+        converted_path.parent.rmdir()
+
+    return ParsedWordFile(
+        path=path,
+        file_type="doc",
+        role=role,
+        text=parsed.text,
+        paragraphs=parsed.paragraphs,
+        comments=parsed.comments,
+        revisions=parsed.revisions,
+    )
+
+
 def extract_doc_best_effort(path: Path, role: str) -> ParsedWordFile:
     """尽力从旧版 `.doc` 提取文本。"""
+    converted = _extract_doc_via_converted_docx(path, role)
+    if converted is not None:
+        return ParsedWordFile(
+            path=path,
+            file_type="doc",
+            role=role,
+            text=converted.text,
+            paragraphs=converted.paragraphs,
+            comments=converted.comments,
+            revisions=converted.revisions,
+        )
+
     strings_cmd = shutil.which("strings")
     if strings_cmd is None:
         msg = (
-            "当前系统缺少 `strings` 命令，无法读取旧版 .doc 文件。"
-            "请把文件转成 .docx 后再运行。"
+            "当前环境无法解析旧版 .doc 文件：未检测到 Microsoft Word、LibreOffice soffice "
+            "或 strings 命令。请安装 pywin32 并确保本机可调用 Word，或先把文件转成 .docx。"
         )
-        raise RuntimeError(msg)
+        raise DocExtractionUnavailableError(msg)
 
     completed = subprocess.run(
         [strings_cmd, "-n", "8", str(path)],
@@ -548,13 +726,21 @@ def build_report(
     return "\n".join(lines)
 
 
-def parse_knowledge_base(knowledge_dir: Path) -> list[ParsedWordFile]:
+def parse_knowledge_base(knowledge_dir: Path) -> KnowledgeBaseParseResult:
     """解析知识库中的全部文件。"""
     parsed_files: list[ParsedWordFile] = []
+    skipped_files: list[Path] = []
     for path in iter_word_files(knowledge_dir):
         role = infer_file_role(path, knowledge_dir)
-        parsed_files.append(parse_word_file(path, role))
-    return parsed_files
+        try:
+            parsed_files.append(parse_word_file(path, role))
+        except DocExtractionUnavailableError:
+            if path.suffix.lower() == ".doc":
+                skipped_files.append(path)
+                print(f"Skipping legacy .doc due to unavailable extractor: {path}")
+                continue
+            raise
+    return KnowledgeBaseParseResult(parsed_files=parsed_files, skipped_files=skipped_files)
 
 
 def create_argument_parser() -> argparse.ArgumentParser:
@@ -574,21 +760,34 @@ def main() -> None:
     parser = create_argument_parser()
     args = parser.parse_args()
 
-    model_name = configure_runtime_env()
-    knowledge_dir = Path(windows_to_wsl(args.knowledge_dir)).expanduser().resolve()
-    input_file = Path(windows_to_wsl(args.input_file)).expanduser().resolve()
+    runtime_config = configure_runtime_env()
+    knowledge_dir = Path(
+        normalize_path_for_current_os(args.knowledge_dir)
+    ).expanduser().resolve()
+    input_file = Path(normalize_path_for_current_os(args.input_file)).expanduser().resolve()
 
     if not knowledge_dir.exists() or not knowledge_dir.is_dir():
         raise FileNotFoundError(f"知识库目录不存在：{knowledge_dir}")
     if not input_file.exists() or not input_file.is_file():
         raise FileNotFoundError(f"待审文件不存在：{input_file}")
 
-    print(f"Using model: {model_name}")
+    print(
+        "Using model: "
+        f"{runtime_config.model_provider}:{runtime_config.model_name}"
+    )
+    if runtime_config.base_url:
+        print(f"Using base URL: {runtime_config.base_url}")
     print(f"Loading knowledge base from: {knowledge_dir}")
 
-    knowledge_files = parse_knowledge_base(knowledge_dir)
+    knowledge_base = parse_knowledge_base(knowledge_dir)
+    knowledge_files = knowledge_base.parsed_files
     if not knowledge_files:
-        raise RuntimeError("知识库目录中未找到任何 .doc 或 .docx 文件。")
+        if knowledge_base.skipped_files:
+            raise RuntimeError(
+                "知识库中的 .doc 文件因当前环境缺少可用解析器而被全部跳过，"
+                "请安装 Word + pywin32、LibreOffice，或先转成 .docx 后再运行。"
+            )
+        raise RuntimeError("知识库目录中未找到任何可解析的 .doc 或 .docx 文件。")
 
     target_role = infer_file_role(input_file, input_file.parent)
     target_file = parse_word_file(input_file, target_role)
@@ -601,7 +800,14 @@ def main() -> None:
         raise RuntimeError("待审文件没有可用于审查的有效段落。")
 
     knowledge_documents = build_knowledge_documents(knowledge_files)
-    model = init_chat_model(model_name, temperature=0)
+    model = init_chat_model(
+        runtime_config.model_name,
+        model_provider=runtime_config.model_provider,
+        temperature=runtime_config.temperature,
+        api_key=runtime_config.api_key,
+        base_url=runtime_config.base_url,
+        extra_body=runtime_config.extra_body,
+    )
 
     review_sections: list[tuple[str, str, Sequence[Document]]] = []
     for paragraph in target_paragraphs:
@@ -622,6 +828,8 @@ def main() -> None:
     output_path.write_text(report, encoding="utf-8")
 
     print(f"Knowledge files loaded: {len(knowledge_files)}")
+    if knowledge_base.skipped_files:
+        print(f"Skipped legacy .doc files: {len(knowledge_base.skipped_files)}")
     print(f"Reviewed paragraphs: {len(target_paragraphs)}")
     print(f"Generated review items: {len(review_sections)}")
     print(f"Report saved to: {output_path}")

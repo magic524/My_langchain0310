@@ -6,6 +6,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 from langchain_core.documents import Document
 
@@ -19,6 +20,91 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ContractReviewAgentTests(unittest.TestCase):
+    def test_configure_runtime_env_supports_local_openai_compatible_llm(self) -> None:
+        env = {
+            "OPENAI_LLM_MODEL": "InstructModel",
+            "OPENAI_MODEL_PROVIDER": "openai",
+            "OPENAI_API_BASE": "http://10.130.61.231:8001/v1",
+            "OPENAI_API_KEY": "E***Y",
+            "OPENAI_TEMPERATURE": "0.7",
+            "OPENAI_EXTRA_BODY": '{"top_k": 20, "chat_template_kwargs": {"enable_thinking": true}}',
+        }
+
+        with (
+            mock.patch.object(MODULE, "find_dotenv", return_value=""),
+            mock.patch.object(MODULE, "load_dotenv"),
+            mock.patch.dict(MODULE.os.environ, env, clear=True),
+        ):
+            config = MODULE.configure_runtime_env()
+
+        self.assertEqual(config.model_name, "InstructModel")
+        self.assertEqual(config.model_provider, "openai")
+        self.assertEqual(config.base_url, "http://10.130.61.231:8001/v1")
+        self.assertEqual(config.api_key, "E***Y")
+        self.assertEqual(config.temperature, 0.7)
+        self.assertEqual(
+            config.extra_body,
+            {"top_k": 20, "chat_template_kwargs": {"enable_thinking": True}},
+        )
+
+    def test_parse_knowledge_base_skips_doc_when_extractor_is_unavailable(self) -> None:
+        legacy_doc = Path("legacy.doc")
+        modern_docx = Path("modern.docx")
+        parsed_docx = MODULE.ParsedWordFile(
+            path=modern_docx,
+            file_type="docx",
+            role="review",
+            text="测试内容",
+            paragraphs=["测试内容"],
+            comments=[],
+            revisions=[],
+        )
+
+        with (
+            mock.patch.object(MODULE, "iter_word_files", return_value=[legacy_doc, modern_docx]),
+            mock.patch.object(MODULE, "infer_file_role", return_value="review"),
+            mock.patch.object(
+                MODULE,
+                "parse_word_file",
+                side_effect=[
+                    MODULE.DocExtractionUnavailableError("当前环境无法解析旧版 .doc 文件。"),
+                    parsed_docx,
+                ],
+            ),
+        ):
+            result = MODULE.parse_knowledge_base(Path("knowledge"))
+
+        self.assertEqual(result.parsed_files, [parsed_docx])
+        self.assertEqual(result.skipped_files, [legacy_doc])
+
+    def test_extract_doc_best_effort_uses_converted_docx_when_available(self) -> None:
+        converted = MODULE.ParsedWordFile(
+            path=Path("temp.docx"),
+            file_type="docx",
+            role="review",
+            text="转换后的内容",
+            paragraphs=["转换后的内容"],
+            comments=["法务：批注"],
+            revisions=["插入：补充条款"],
+        )
+
+        with mock.patch.object(MODULE, "_extract_doc_via_converted_docx", return_value=converted):
+            parsed = MODULE.extract_doc_best_effort(Path("legacy.doc"), "review")
+
+        self.assertEqual(parsed.file_type, "doc")
+        self.assertEqual(parsed.path, Path("legacy.doc"))
+        self.assertEqual(parsed.paragraphs, ["转换后的内容"])
+        self.assertEqual(parsed.comments, ["法务：批注"])
+        self.assertEqual(parsed.revisions, ["插入：补充条款"])
+
+    def test_extract_doc_best_effort_raises_when_no_extractor_available(self) -> None:
+        with (
+            mock.patch.object(MODULE, "_extract_doc_via_converted_docx", return_value=None),
+            mock.patch.object(MODULE.shutil, "which", return_value=None),
+        ):
+            with self.assertRaises(MODULE.DocExtractionUnavailableError):
+                MODULE.extract_doc_best_effort(Path("legacy.doc"), "review")
+
     def test_extract_docx_reads_paragraphs_comments_and_revisions(self) -> None:
         document_xml = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
         <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -96,6 +182,18 @@ class ContractReviewAgentTests(unittest.TestCase):
                 "第三条 任一方不得擅自披露保密信息。",
             ],
         )
+
+    def test_normalize_path_for_current_os_keeps_windows_path_on_windows(self) -> None:
+        with mock.patch.object(MODULE.os, "name", "nt"):
+            path_value = MODULE.normalize_path_for_current_os(r"E:\contracts\input.docx")
+
+        self.assertEqual(path_value, r"E:\contracts\input.docx")
+
+    def test_normalize_path_for_current_os_converts_windows_path_on_posix(self) -> None:
+        with mock.patch.object(MODULE.os, "name", "posix"):
+            path_value = MODULE.normalize_path_for_current_os(r"E:\contracts\input.docx")
+
+        self.assertEqual(path_value, "/mnt/e/contracts/input.docx")
 
 
 if __name__ == "__main__":

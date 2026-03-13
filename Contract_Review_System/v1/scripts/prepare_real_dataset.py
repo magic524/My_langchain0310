@@ -133,17 +133,63 @@ def structured_review_from_snippet(text: str) -> dict[str, Any]:
     }
 
 
-def best_match_snippet(
-    clause_text: str,
+def align_review_to_clauses(
+    clauses: list[str],
     source_parsed: Any,
     *,
     contract_module: Any,
-) -> str:
-    docs = contract_module.build_knowledge_documents([source_parsed])
-    references = contract_module.retrieve_references(clause_text, docs, top_k=1)
-    if not references:
-        return ""
-    return str(references[0].page_content).strip()
+) -> dict[str, str]:
+    """Align review document paragraphs to contract clauses via reverse matching.
+
+    For each review paragraph, find the contract clause it most closely discusses
+    (reverse assignment), then collect results per clause. This avoids the
+    structural misalignment that occurs when review documents use a numbered-list
+    format that does not mirror the original contract's paragraph order.
+
+    Args:
+        clauses: All contract clause texts (deduplicated, in order).
+        source_parsed: Parsed review document (third-party / final / ground-truth).
+        contract_module: The ``contract_review_agent`` module, which provides
+            ``build_knowledge_documents`` and ``score_document``.
+
+    Returns:
+        Mapping from clause text to the best-aligned review snippet.  Up to
+        three matched review paragraphs are joined with `` | ``.  Empty string
+        when no review paragraph is assigned to the clause.
+    """
+    from langchain_core.documents import Document  # local to avoid hard top-level dep
+
+    if not clauses:
+        return {}
+
+    # Build light Document objects for every contract clause so that
+    # score_document() can score review paragraphs *against* them.
+    clause_docs = [
+        Document(page_content=clause, metadata={"clause_index": i})
+        for i, clause in enumerate(clauses)
+    ]
+
+    review_docs = contract_module.build_knowledge_documents([source_parsed])
+    review_paragraphs = [doc for doc in review_docs if len(doc.page_content) >= 15]
+
+    # Reverse assignment: for each review paragraph, find its best-matching clause.
+    clause_to_snippets: dict[int, list[str]] = {i: [] for i in range(len(clauses))}
+    for review_doc in review_paragraphs:
+        best_score = 0.0
+        best_idx = -1
+        for i, clause_doc in enumerate(clause_docs):
+            score = contract_module.score_document(review_doc.page_content, clause_doc)
+            if score > best_score:
+                best_score = score
+                best_idx = i
+        if best_idx >= 0 and best_score > 0.0:
+            clause_to_snippets[best_idx].append(review_doc.page_content)
+
+    # Merge up to 3 snippets per clause; empty string when no snippet assigned.
+    return {
+        clause: " | ".join(clause_to_snippets[i][:3])
+        for i, clause in enumerate(clauses)
+    }
 
 
 def is_substantive_clause(text: str) -> bool:
@@ -194,6 +240,7 @@ def build_contract_payload(
     max_paragraphs: int,
     min_chars: int,
     keep_all_clauses: bool,
+    all_paragraphs: bool,
 ) -> dict[str, Any]:
     all_files = [
         file
@@ -217,24 +264,43 @@ def build_contract_payload(
     adoption_parsed = contract_module.parse_word_file(adoption_file.resolve(), role="review")
     third_party_parsed = contract_module.parse_word_file(third_party_file.resolve(), role="review")
 
-    all_clauses = contract_module.select_target_paragraphs(
-        original_parsed,
-        max_paragraphs=max(max_paragraphs * 3, 30),
-        min_chars=min_chars,
-    )
-    if keep_all_clauses:
-        clauses = all_clauses[:max_paragraphs]
-        filtered_out: list[str] = []
+    if all_paragraphs:
+        all_clauses = []
+        seen: set[str] = set()
+        for paragraph in original_parsed.paragraphs:
+            compact = contract_module.normalize_whitespace(paragraph)
+            if not compact or compact in seen:
+                continue
+            all_clauses.append(compact)
+            seen.add(compact)
+        clauses = list(all_clauses)
+        filtered_out = []
     else:
-        clauses = [clause for clause in all_clauses if is_substantive_clause(clause)][:max_paragraphs]
-        clause_set = set(clauses)
-        filtered_out = [clause for clause in all_clauses if clause not in clause_set]
+        all_clauses = contract_module.select_target_paragraphs(
+            original_parsed,
+            max_paragraphs=max(max_paragraphs * 3, 30),
+            min_chars=min_chars,
+        )
+        if keep_all_clauses:
+            clauses = all_clauses[:max_paragraphs]
+            filtered_out = []
+        else:
+            clauses = [clause for clause in all_clauses if is_substantive_clause(clause)][:max_paragraphs]
+            clause_set = set(clauses)
+            filtered_out = [clause for clause in all_clauses if clause not in clause_set]
+
+    # Precompute reverse-aligned snippet maps once per review document so that
+    # each review paragraph is assigned to the clause it most closely discusses,
+    # rather than naively fetching the best forward-match per clause.
+    third_party_map = align_review_to_clauses(clauses, third_party_parsed, contract_module=contract_module)
+    final_map = align_review_to_clauses(clauses, final_review_parsed, contract_module=contract_module)
+    adoption_map = align_review_to_clauses(clauses, adoption_parsed, contract_module=contract_module)
 
     clause_payloads: list[dict[str, Any]] = []
     for index, clause_text in enumerate(clauses, start=1):
-        third_party_snippet = best_match_snippet(clause_text, third_party_parsed, contract_module=contract_module)
-        final_snippet = best_match_snippet(clause_text, final_review_parsed, contract_module=contract_module)
-        adoption_snippet = best_match_snippet(clause_text, adoption_parsed, contract_module=contract_module)
+        third_party_snippet = third_party_map.get(clause_text, "")
+        final_snippet = final_map.get(clause_text, "")
+        adoption_snippet = adoption_map.get(clause_text, "")
 
         ground_truth = structured_review_from_snippet(adoption_snippet)
         third_party = structured_review_from_snippet(third_party_snippet)
@@ -268,6 +334,8 @@ def build_contract_payload(
         },
         "conversion_trace": {
             "keep_all_clauses": keep_all_clauses,
+            "all_paragraphs": all_paragraphs,
+            "alignment_method": "semantic_reverse",
             "candidate_clause_count": len(all_clauses),
             "selected_clause_count": len(clause_payloads),
             "filtered_out_preview": filtered_out[:20],
@@ -305,6 +373,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Keep clauses without heuristic filtering to avoid missing information",
     )
+    parser.add_argument(
+        "--all-paragraphs",
+        action="store_true",
+        help="Use all non-empty paragraphs from the original contract for dataset generation",
+    )
     return parser.parse_args()
 
 
@@ -331,6 +404,7 @@ def main() -> None:
                 max_paragraphs=args.max_paragraphs,
                 min_chars=args.min_chars,
                 keep_all_clauses=args.keep_all_clauses,
+                all_paragraphs=args.all_paragraphs,
             )
             contracts.append(payload)
             print(f"Prepared: {contract_dir.name} -> {len(payload['clauses'])} clauses")

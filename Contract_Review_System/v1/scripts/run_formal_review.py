@@ -11,6 +11,14 @@ from pathlib import Path
 from typing import Any
 
 CURRENT_DIR = Path(__file__).resolve().parent
+SRC_DIR = CURRENT_DIR.parent / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from contract_review_v1.metrics import evaluate_participant
+from contract_review_v1.reporting import dump_json_detail, participant_to_dict, render_markdown_report
+from contract_review_v1.runner import parse_review_text
+from contract_review_v1.schema import ParsedReview, load_dataset
 
 
 def load_contract_module(module_path: Path) -> Any:
@@ -130,7 +138,100 @@ def parse_args() -> argparse.Namespace:
         default=30,
         help="Minimum paragraph length",
     )
+    parser.add_argument(
+        "--eval-dataset",
+        default=str(Path("Contract_Review_System") / "v1" / "data" / "real_eval_dataset.json"),
+        help="Evaluation dataset JSON used to compare with third-party/final-applied/human truth",
+    )
+    parser.add_argument(
+        "--all-paragraphs",
+        action="store_true",
+        help="Review all non-empty paragraphs in the target contract",
+    )
     return parser.parse_args()
+
+
+def build_prediction_by_clause(paragraphs: list[str], review_sections: list[tuple[str, str, Any]]) -> dict[str, ParsedReview]:
+    review_map: dict[str, str] = {paragraph: review_text for paragraph, review_text, _ in review_sections}
+    prediction_map: dict[str, ParsedReview] = {}
+    for paragraph in paragraphs:
+        review_text = review_map.get(paragraph, "无需批注")
+        prediction_map[paragraph] = parse_review_text(review_text)
+    return prediction_map
+
+
+def maybe_write_evaluation_outputs(
+    *,
+    args: argparse.Namespace,
+    run_dir: Path,
+    test_dir_name: str,
+    target_paragraphs: list[str],
+    review_sections: list[tuple[str, str, Any]],
+) -> dict[str, Any]:
+    dataset_path = (CURRENT_DIR.parent.parent.parent / args.eval_dataset).resolve()
+    if not dataset_path.exists():
+        return {
+            "evaluation_generated": False,
+            "reason": f"eval dataset not found: {dataset_path}",
+        }
+
+    records = load_dataset(dataset_path)
+    test_records = [record for record in records if record.contract_id == test_dir_name]
+    if not test_records:
+        return {
+            "evaluation_generated": False,
+            "reason": f"no records matched contract_id={test_dir_name}",
+            "eval_dataset": str(dataset_path),
+        }
+
+    prediction_by_clause = build_prediction_by_clause(target_paragraphs, review_sections)
+    system_predictions: list[ParsedReview] = []
+    unmatched_records = 0
+    for record in test_records:
+        prediction = prediction_by_clause.get(record.clause_text)
+        if prediction is None:
+            unmatched_records += 1
+            prediction = ParsedReview(
+                has_risk=False,
+                risk_level=None,
+                risk_points=[],
+                explanation="",
+                suggestion="",
+                raw_text="(该条款未进入本次审查批次，按无需批注记为未命中)",
+            )
+        system_predictions.append(prediction)
+
+    third_party_predictions = [record.third_party for record in test_records]
+    final_applied_predictions = [record.final_applied for record in test_records]
+    participants = [
+        evaluate_participant("第三方平台", test_records, third_party_predictions),
+        evaluate_participant("最终应用版", test_records, final_applied_predictions),
+        evaluate_participant("本系统 v1", test_records, system_predictions),
+    ]
+
+    eval_md_path = run_dir / "evaluation_metrics.md"
+    eval_json_path = run_dir / "evaluation_metrics.json"
+
+    eval_md_path.write_text(render_markdown_report(participants), encoding="utf-8")
+    dump_json_detail(
+        eval_json_path,
+        {
+            "eval_dataset": str(dataset_path),
+            "contract_id": test_dir_name,
+            "records_total": len(test_records),
+            "records_unmatched_by_clause_text": unmatched_records,
+            "participants": [participant_to_dict(item) for item in participants],
+        },
+    )
+
+    return {
+        "evaluation_generated": True,
+        "eval_dataset": str(dataset_path),
+        "eval_records": len(test_records),
+        "eval_unmatched_records": unmatched_records,
+        "output_evaluation_md": str(eval_md_path),
+        "output_evaluation_json": str(eval_json_path),
+    }
 
 
 def main() -> None:
@@ -165,11 +266,21 @@ def main() -> None:
 
     target_role = contract_module.infer_file_role(test_file, test_dir)
     target_file = contract_module.parse_word_file(test_file, target_role)
-    target_paragraphs = contract_module.select_target_paragraphs(
-        target_file,
-        max_paragraphs=args.max_paragraphs,
-        min_chars=args.min_paragraph_chars,
-    )
+    if args.all_paragraphs:
+        target_paragraphs = []
+        seen: set[str] = set()
+        for paragraph in target_file.paragraphs:
+            compact = contract_module.normalize_whitespace(paragraph)
+            if not compact or compact in seen:
+                continue
+            target_paragraphs.append(compact)
+            seen.add(compact)
+    else:
+        target_paragraphs = contract_module.select_target_paragraphs(
+            target_file,
+            max_paragraphs=args.max_paragraphs,
+            min_chars=args.min_paragraph_chars,
+        )
     if not target_paragraphs:
         msg = "No valid target paragraphs found"
         raise RuntimeError(msg)
@@ -197,6 +308,14 @@ def main() -> None:
     report = contract_module.build_report(target_file, review_sections, all_knowledge_files)
     review_md_path.write_text(report, encoding="utf-8")
 
+    eval_meta = maybe_write_evaluation_outputs(
+        args=args,
+        run_dir=run_dir,
+        test_dir_name=test_dir.name,
+        target_paragraphs=target_paragraphs,
+        review_sections=review_sections,
+    )
+
     run_meta = {
         "run_dir": str(run_dir),
         "test_contract_dir": str(test_dir),
@@ -217,13 +336,20 @@ def main() -> None:
             "top_k": args.top_k,
             "max_paragraphs": args.max_paragraphs,
             "min_paragraph_chars": args.min_paragraph_chars,
+            "all_paragraphs": args.all_paragraphs,
         },
+        "evaluation": eval_meta,
     }
     run_meta_path.write_text(json.dumps(run_meta, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print(f"Run folder: {run_dir}")
     print(f"Review report: {review_md_path}")
     print(f"Run meta: {run_meta_path}")
+    if eval_meta.get("evaluation_generated"):
+        print(f"Evaluation markdown: {eval_meta.get('output_evaluation_md')}")
+        print(f"Evaluation json: {eval_meta.get('output_evaluation_json')}")
+    else:
+        print(f"Evaluation skipped: {eval_meta.get('reason')}")
 
 
 if __name__ == "__main__":

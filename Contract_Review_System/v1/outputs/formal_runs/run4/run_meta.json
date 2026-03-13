@@ -1,0 +1,37 @@
+{
+  "run_dir": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\outputs\\formal_runs\\run4",
+  "test_contract_dir": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议",
+  "test_file": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议\\1-原合同：品牌球馆冠名合作协议.docx",
+  "knowledge_dirs": [
+    "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\2-服务协议",
+    "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\3-保密协议"
+  ],
+  "knowledge_files_loaded": 12,
+  "knowledge_documents": 541,
+  "skipped_legacy_doc": [
+    "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\2-服务协议\\~$-关于《服务协议》的审查意见书.docx (temporary lock file)",
+    "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\2-服务协议\\~$同-服务协议.docx (temporary lock file)"
+  ],
+  "reviewed_paragraphs": 20,
+  "generated_review_items": 15,
+  "output_review_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\outputs\\formal_runs\\run4\\review_report.md",
+  "model": {
+    "provider": "openai",
+    "name": "InstructModel",
+    "base_url": "http://10.130.61.231:8001/v1"
+  },
+  "params": {
+    "top_k": 5,
+    "max_paragraphs": 20,
+    "min_paragraph_chars": 50,
+    "all_paragraphs": false
+  },
+  "evaluation": {
+    "evaluation_generated": true,
+    "eval_dataset": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\data\\real_eval_dataset_full.json",
+    "eval_records": 87,
+    "eval_unmatched_records": 67,
+    "output_evaluation_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\outputs\\formal_runs\\run4\\evaluation_metrics.md",
+    "output_evaluation_json": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\outputs\\formal_runs\\run4\\evaluation_metrics.json"
+  }
+}

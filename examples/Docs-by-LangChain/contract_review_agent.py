@@ -71,6 +71,7 @@ SYSTEM_PROMPT = """你是一名严谨的合同审查助手。
 
 4. 输出必须简洁、具体，避免空泛套话。
 5. 如果参考材料不足以支撑明确判断，可以指出“参考不足”。
+6. 必须使用中文输出，禁止输出英文思维过程、`Thinking Process`、`<think>` 或任何推理草稿。
 """
 
 
@@ -650,6 +651,32 @@ def ai_message_to_text(response: object) -> str:
     return str(content).strip()
 
 
+def sanitize_review_text(text: str) -> str:
+    """清洗模型输出，只保留最终可展示的中文审查内容。"""
+    cleaned = text.strip()
+    if not cleaned:
+        return cleaned
+
+    cleaned = re.sub(r"<think>.*?</think>", "", cleaned, flags=re.IGNORECASE | re.DOTALL)
+
+    risk_markers = ("风险级别：", "风险级别:")
+    no_comment_markers = ("无需批注",)
+    final_markers = [
+        *(cleaned.find(marker) for marker in risk_markers if marker in cleaned),
+        *(cleaned.find(marker) for marker in no_comment_markers if marker in cleaned),
+    ]
+    if final_markers:
+        cleaned = cleaned[min(final_markers) :]
+
+    # 二次兜底，去掉常见英文思维过程标题。
+    cleaned = re.sub(r"^Thinking\s+Process:.*", "", cleaned, flags=re.IGNORECASE | re.DOTALL)
+    cleaned = cleaned.strip()
+
+    if "风险级别" not in cleaned and "无需批注" in cleaned:
+        return "无需批注"
+    return cleaned
+
+
 def review_single_paragraph(
     model: Any,
     paragraph: str,
@@ -658,6 +685,7 @@ def review_single_paragraph(
     """对单个条款生成批注式审查意见。"""
     human_prompt = (
         "请参考下面的历史审查材料，对目标条款进行同风格审查。\n\n"
+        "请仅输出中文最终审查结果，不要输出思考过程、英文说明或 `<think>` 内容。\n\n"
         f"目标条款：\n{paragraph}\n\n"
         f"参考材料：\n{format_references(references)}\n"
     )
@@ -667,7 +695,7 @@ def review_single_paragraph(
             ("human", human_prompt),
         ]
     )
-    return ai_message_to_text(response)
+    return sanitize_review_text(ai_message_to_text(response))
 
 
 def build_report(
@@ -815,7 +843,7 @@ def main() -> None:
         if not references:
             continue
         review_text = review_single_paragraph(model, paragraph, references)
-        if review_text.strip() == "无需批注":
+        if review_text.strip().startswith("无需批注"):
             continue
         review_sections.append((paragraph, review_text, references))
 

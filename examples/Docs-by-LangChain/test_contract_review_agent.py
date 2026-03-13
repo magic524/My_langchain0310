@@ -20,6 +20,31 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ContractReviewAgentTests(unittest.TestCase):
+    def test_sanitize_review_text_removes_thinking_and_keeps_structured_result(self) -> None:
+        raw_text = (
+            "Thinking Process:\n"
+            "1. analyze\n"
+            "<think>hidden reasoning</think>\n"
+            "风险级别：中\n"
+            "问题说明：存在歧义\n"
+            "审查批注：请明确\n"
+            "建议修改：补充定义\n"
+            "参考依据：历史批注\n"
+        )
+
+        cleaned = MODULE.sanitize_review_text(raw_text)
+
+        self.assertTrue(cleaned.startswith("风险级别：中"))
+        self.assertNotIn("Thinking Process", cleaned)
+        self.assertNotIn("<think>", cleaned)
+
+    def test_sanitize_review_text_collapses_no_comment_output(self) -> None:
+        raw_text = "Thinking Process: none\n无需批注\n参考片段：..."
+
+        cleaned = MODULE.sanitize_review_text(raw_text)
+
+        self.assertEqual(cleaned, "无需批注")
+
     def test_configure_runtime_env_supports_local_openai_compatible_llm(self) -> None:
         env = {
             "OPENAI_LLM_MODEL": "InstructModel",

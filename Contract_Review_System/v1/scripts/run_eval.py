@@ -14,7 +14,8 @@ if str(SRC_DIR) not in sys.path:
 
 from contract_review_v1.metrics import evaluate_participant
 from contract_review_v1.reporting import dump_json_detail, participant_to_dict, render_markdown_report
-from contract_review_v1.runner import generate_system_review, load_agent_module
+from contract_review_v1.agent_core import configure_runtime_env
+from contract_review_v1.runner import generate_system_review
 from contract_review_v1.schema import ParsedReview, load_dataset
 
 
@@ -29,16 +30,6 @@ def parse_args() -> argparse.Namespace:
         "--output-dir",
         default=str(CURRENT_DIR.parent / "outputs"),
         help="Directory for markdown and json outputs",
-    )
-    parser.add_argument(
-        "--agent-module",
-        default=str(
-            CURRENT_DIR.parent.parent.parent
-            / "examples"
-            / "Docs-by-LangChain"
-            / "contract_review_agent.py"
-        ),
-        help="Path to existing contract_review_agent.py module",
     )
     parser.add_argument(
         "--skip-system",
@@ -73,16 +64,13 @@ def main() -> None:
             for _ in records
         ]
     else:
-        agent_module_path = Path(args.agent_module).expanduser().resolve()
-        agent_module = load_agent_module(agent_module_path)
-        runtime_config = agent_module.configure_runtime_env()
+        runtime_config = configure_runtime_env()
 
         system_predictions = []
         for index, record in enumerate(records, start=1):
             print(f"[{index}/{len(records)}] Generating review for {record.contract_id}/{record.clause_id}")
             prediction = generate_system_review(
                 record.clause_text,
-                agent_module=agent_module,
                 runtime_config=runtime_config,
             )
             system_predictions.append(prediction)

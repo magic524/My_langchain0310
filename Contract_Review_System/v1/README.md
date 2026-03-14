@@ -19,6 +19,7 @@ v1/
 ├── src/
 │   └── contract_review_v1/
 │       ├── __init__.py
+│       ├── agent_core.py   # v1 内置审查核心（已与 examples 完全隔离）
 │       ├── schema.py       # 数据集加载与结构化对象（ClauseEvaluationRecord、ParsedReview）
 │       ├── runner.py       # 本地 LLM 调用与输出解析（generate_system_review）
 │       ├── metrics.py      # 三类指标计算（evaluate_participant、_explanation_score 等）
@@ -27,7 +28,8 @@ v1/
 ├── scripts/
 │   ├── prepare_real_dataset.py   # 将真实合同目录转换为评测 JSON 数据集
 │   ├── run_eval.py               # 纯评测入口（对比三方结果，不会执行正式审查）
-│   └── run_formal_review.py      # 正式审查入口（调用 LLM + 自动评测，输出 runN 目录）
+│   ├── run_formal_review.py      # 正式审查入口（调用 LLM + 自动评测，输出 runN 目录）
+│   └── run_ablation.py           # 消融入口（prompt-only / kb-full / 单知识库）
 │
 ├── data/
 │   ├── sample_eval_dataset.json       # 样例数据（少量条款，用于快速验证流程）
@@ -39,10 +41,16 @@ v1/
     ├── real/                  # 仅跑 run_eval.py 时的输出
     └── formal_runs/
         └── runN/              # run_formal_review.py 每次自动创建
-            ├── review_report.md       # 与 contract_review_agent.py 同风格的审查报告
+          ├── review_report.md       # v1 内置 agent_core 生成的审查报告
             ├── evaluation_metrics.md  # 三方对比评测报告（Markdown）
             ├── evaluation_metrics.json
             └── run_meta.json          # 本次运行参数与文件清单
+      └── ablation_runs/
+        └── {mode}/{timestamp}/
+          ├── review_report.md
+          ├── evaluation_metrics.md
+          ├── evaluation_metrics.json
+          └── run_meta.json
 ```
 
 ---
@@ -148,6 +156,8 @@ score = 0.7 * coverage + 0.3 * actionability
 
 ## 运行
 
+运行命令总表见：`docs/run_commands.md`。
+
 Windows + conda 环境示例：
 
 ```powershell
@@ -207,8 +217,30 @@ python Contract_Review_System/v1/scripts/run_formal_review.py --data-root data/�
 
 每次运行会自动新建 `run1`、`run2`... 目录，并输出：
 
-- `review_report.md`：与 `contract_review_agent.py` 同风格的详细审查报告
+- `review_report.md`：由 v1 内置 `agent_core.py` 生成的详细审查报告
 - `run_meta.json`：本次运行参数、模型、输入输出文件清单
+
+## 消融实验运行（独立入口）
+
+v1 已提供独立 `run_ablation.py`，用于区分“纯 Prompt 能力”和“知识库增强能力”。
+
+默认会运行 4 种模式并按 `{模式名}/{时间戳}` 输出：
+
+- `full`：知识库 = `2-` + `3-`
+- `prompt-only`：不加载知识库，仅依赖系统提示词
+- `service-only`：知识库 = `2-`
+- `nda-only`：知识库 = `3-`
+
+```powershell
+conda activate langchain
+python Contract_Review_System/v1/scripts/run_ablation.py --data-root data/合同数据-2026.3.12 --test-prefix 1- --eval-dataset Contract_Review_System/v1/data/real_eval_dataset_full.json --output-root Contract_Review_System/v1/outputs/ablation_runs --all-paragraphs --top-k 5
+```
+
+如只跑纯 Prompt 消融：
+
+```powershell
+python Contract_Review_System/v1/scripts/run_ablation.py --data-root data/合同数据-2026.3.12 --test-prefix 1- --modes prompt-only --eval-dataset Contract_Review_System/v1/data/real_eval_dataset_full.json --output-root Contract_Review_System/v1/outputs/ablation_runs --all-paragraphs
+```
 
 ## 下一步
 

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import re
 import sys
@@ -17,18 +16,7 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from contract_review_v1.runner import parse_review_text
-
-
-def load_module(module_path: Path, module_name: str) -> Any:
-    spec = importlib.util.spec_from_file_location(module_name, str(module_path))
-    if spec is None or spec.loader is None:
-        msg = f"Cannot import module from {module_path}"
-        raise RuntimeError(msg)
-
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+import contract_review_v1.agent_core as contract_module
 
 
 def is_temp_word_file(path: Path) -> bool:
@@ -384,9 +372,6 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     workspace_root = CURRENT_DIR.parent.parent.parent
-
-    contract_module_path = workspace_root / "examples" / "Docs-by-LangChain" / "contract_review_agent.py"
-    contract_module = load_module(contract_module_path, "contract_review_agent_for_dataset")
 
     input_root = (workspace_root / args.input_root).resolve()
     output_path = (workspace_root / args.output).resolve()

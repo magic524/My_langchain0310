@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import zipfile
 import sys
@@ -15,22 +14,11 @@ SRC_DIR = CURRENT_DIR.parent / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+import contract_review_v1.agent_core as contract_module
 from contract_review_v1.metrics import evaluate_participant
 from contract_review_v1.reporting import dump_json_detail, participant_to_dict, render_markdown_report
 from contract_review_v1.runner import parse_review_text
 from contract_review_v1.schema import ParsedReview, load_dataset
-
-
-def load_contract_module(module_path: Path) -> Any:
-    spec = importlib.util.spec_from_file_location("contract_review_agent", str(module_path))
-    if spec is None or spec.loader is None:
-        msg = f"Cannot import module from {module_path}"
-        raise RuntimeError(msg)
-
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 def is_temp_word_file(path: Path) -> bool:
@@ -239,9 +227,6 @@ def main() -> None:
     workspace_root = CURRENT_DIR.parent.parent.parent
     data_root = (workspace_root / args.data_root).resolve()
     output_root = (workspace_root / args.output_root).resolve()
-
-    contract_module_path = workspace_root / "examples" / "Docs-by-LangChain" / "contract_review_agent.py"
-    contract_module = load_contract_module(contract_module_path)
 
     test_dir = find_contract_dir(data_root, args.test_prefix)
     knowledge_dirs = [find_contract_dir(data_root, prefix) for prefix in args.knowledge_prefixes]

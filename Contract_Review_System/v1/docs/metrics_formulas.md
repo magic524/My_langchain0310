@@ -145,7 +145,7 @@ $$
 
 - 如何从原始文件构造 ground_truth：
    1. 脚本 `Contract_Review_System/v1/scripts/prepare_real_dataset.py` 读取合同目录下的 Word 文件（`1-原合同*`、`2-第三方平台审查结果`、`3-最终审查意见*`、`4-采纳情况说明*`）。
-   2. 使用 `examples/Docs-by-LangChain/contract_review_agent.py` 中的 `parse_word_file` 提取段落、批注和修订痕迹。
+   2. 使用 `Contract_Review_System/v1/src/contract_review_v1/agent_core.py` 中的 `parse_word_file` 提取段落、批注和修订痕迹。
    3. 脚本对 `4-采纳情况说明`（采纳说明）、第三方结果和最终审查意见分别做段落级解析，然后通过“语义反向对齐”（把审查段落反向分配给最相关的合同条款）得到每条条款对应的审查片段。
    4. 对分配到某条款的采纳说明片段，调用 `structured_review_from_snippet`（在脚本中）以规则与 `parse_review_text` 的解析结果构造 `ground_truth`：
        - 若片段包含结构化字段（如“风险级别”、“问题说明”、“建议修改”）或明确标注为“无需批注”，则按解析结果填充 `ParsedReview`。

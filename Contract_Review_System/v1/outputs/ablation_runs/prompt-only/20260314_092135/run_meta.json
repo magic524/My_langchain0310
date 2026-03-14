@@ -1,0 +1,40 @@
+{
+  "mode": "prompt-only",
+  "run_dir": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\outputs\\ablation_runs\\prompt-only\\20260314_092135",
+  "test_contract_dir": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议",
+  "test_file": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议\\1-原合同：品牌球馆冠名合作协议.docx",
+  "knowledge_mode": "none",
+  "knowledge_dirs": [],
+  "knowledge_files_loaded": 0,
+  "knowledge_documents": 0,
+  "skipped_legacy_doc": [],
+  "reviewed_paragraphs": 87,
+  "generated_review_items": 52,
+  "timing": {
+    "total_seconds": 14491.152,
+    "llm_calls": 87,
+    "llm_avg_seconds": 166.526,
+    "llm_max_seconds": 2003.376,
+    "llm_min_seconds": 3.477
+  },
+  "output_review_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\outputs\\ablation_runs\\prompt-only\\20260314_092135\\review_report.md",
+  "model": {
+    "provider": "openai",
+    "name": "InstructModel",
+    "base_url": "http://10.130.61.231:8001/v1"
+  },
+  "params": {
+    "top_k": 5,
+    "max_paragraphs": 15,
+    "min_paragraph_chars": 30,
+    "all_paragraphs": true
+  },
+  "evaluation": {
+    "evaluation_generated": true,
+    "eval_dataset": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\data\\real_eval_dataset_full.json",
+    "eval_records": 87,
+    "eval_unmatched_records": 0,
+    "output_evaluation_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\outputs\\ablation_runs\\prompt-only\\20260314_092135\\evaluation_metrics.md",
+    "output_evaluation_json": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\outputs\\ablation_runs\\prompt-only\\20260314_092135\\evaluation_metrics.json"
+  }
+}

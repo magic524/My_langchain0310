@@ -1,0 +1,140 @@
+{
+  "eval_dataset": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v1\\data\\real_eval_dataset_full.json",
+  "contract_id": "1-品牌球馆冠名合作协议",
+  "records_total": 87,
+  "records_unmatched_by_clause_text": 0,
+  "participants": [
+    {
+      "name": "第三方平台",
+      "risk_accuracy": 0.9195402298850575,
+      "risk_miss_rate": 0.12903225806451613,
+      "risk_false_positive_rate": 0.05357142857142857,
+      "explanation_accuracy": {
+        "score": 0.8735632183908046,
+        "correct_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c001",
+          "clause_text": "牌球馆冠名合作协议",
+          "predicted_text": "关于《品牌球馆冠名合作协议》的审查意见书 | 就某（深圳）科技有限公司拟与--签订的《品牌球馆冠名合作协议》进行法律审查。根据《中华人民共和国民法典》等相关法律、法规、业务规则等有关规定出具如下合同审查意见书。 | 为保障我方的合法权益，就具体条款的详细修改见附件：关于《品牌球馆冠名合作协议》详细审查意见（共20条）。以下对重要风险向我方作出提醒：",
+          "reference_text": "关于《品牌球馆冠名合作协议》详细审查意见（共20条）。",
+          "reason": "得分 1.00，达到正确阈值 0.80"
+        },
+        "wrong_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c013",
+          "clause_text": "2. 甲方按本协议约定向乙方提供指定物资赞助，乙方按本协议约定向甲方提供品牌冠名及专属曝光权益。",
+          "predicted_text": "1.本所及本律师以现行有效法律法规及委托方提供的资料和信息为基础，对委托方提供信息的真实性完整性和准确性予以重点关注；但如委托方提供的资料和信息因故意隐瞒或者疏忽致使其不真实、不准确或不完整，或后续法律法规变更或资料更新，则本意见书内容应进行相应修正，本所及本律师不应因此承担任何责任。",
+          "reference_text": "曾梅梅：采纳\n原因：我方为甲方，管辖地一般约定在甲方处。",
+          "reason": "得分 0.00，低于正确阈值 0.80"
+        }
+      },
+      "suggestion_accuracy": {
+        "score": 0.7604885057471263,
+        "correct_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c004",
+          "clause_text": "联系地址：",
+          "predicted_text": "",
+          "reference_text": "",
+          "reason": "得分 1.00，达到正确阈值 0.75"
+        },
+        "wrong_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c001",
+          "clause_text": "牌球馆冠名合作协议",
+          "predicted_text": "关于《品牌球馆冠名合作协议》的审查意见书 | 就某（深圳）科技有限公司拟与--签订的《品牌球馆冠名合作协议》进行法律审查。根据《中华人民共和国民法典》等相关法律、法规、业务规则等有关规定出具如下合同审查意见书。 | 为保障我方的合法权益，就具体条款的详细修改见附件：关于《品牌球馆冠名合作协议》详细审查意见（共20条）。以下对重要风险向我方作出提醒：",
+          "reference_text": "关于《品牌球馆冠名合作协议》详细审查意见（共20条）。",
+          "reason": "得分 0.00，低于正确阈值 0.75"
+        }
+      }
+    },
+    {
+      "name": "最终应用版",
+      "risk_accuracy": 0.7701149425287356,
+      "risk_miss_rate": 0.0967741935483871,
+      "risk_false_positive_rate": 0.30357142857142855,
+      "explanation_accuracy": {
+        "score": 0.6379310344827587,
+        "correct_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c002",
+          "clause_text": "甲方（赞助方）：某（深圳）科技有限公司 （品牌运营方，以下简称“甲方”）",
+          "predicted_text": "甲方（赞助方）：翘曲点（深圳）科技有限公司 （翘曲点品牌运营方，以下简称“甲方”）",
+          "reference_text": "甲方（赞助方）：某（深圳）科技有限公司 （曲点品牌运营方，以下简称“甲方”）",
+          "reason": "得分 1.00，达到正确阈值 0.80"
+        },
+        "wrong_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c001",
+          "clause_text": "牌球馆冠名合作协议",
+          "predicted_text": "",
+          "reference_text": "关于《品牌球馆冠名合作协议》详细审查意见（共20条）。",
+          "reason": "得分 0.00，低于正确阈值 0.80"
+        }
+      },
+      "suggestion_accuracy": {
+        "score": 0.473132183908046,
+        "correct_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c011",
+          "clause_text": "一、合作核心内容",
+          "predicted_text": "",
+          "reference_text": "",
+          "reason": "得分 1.00，达到正确阈值 0.75"
+        },
+        "wrong_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c001",
+          "clause_text": "牌球馆冠名合作协议",
+          "predicted_text": "",
+          "reference_text": "关于《品牌球馆冠名合作协议》详细审查意见（共20条）。",
+          "reason": "得分 0.00，低于正确阈值 0.75"
+        }
+      }
+    },
+    {
+      "name": "本系统 v1",
+      "risk_accuracy": 0.4827586206896552,
+      "risk_miss_rate": 0.3870967741935484,
+      "risk_false_positive_rate": 0.5892857142857143,
+      "explanation_accuracy": {
+        "score": 0.26772030651341,
+        "correct_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c005",
+          "clause_text": "联系方式：",
+          "predicted_text": "无需批注",
+          "reference_text": "",
+          "reason": "得分 1.00，达到正确阈值 0.80"
+        },
+        "wrong_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c001",
+          "clause_text": "牌球馆冠名合作协议",
+          "predicted_text": "无需批注",
+          "reference_text": "关于《品牌球馆冠名合作协议》详细审查意见（共20条）。",
+          "reason": "得分 0.00，低于正确阈值 0.80"
+        }
+      },
+      "suggestion_accuracy": {
+        "score": 0.33477011494252884,
+        "correct_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c005",
+          "clause_text": "联系方式：",
+          "predicted_text": "无需批注",
+          "reference_text": "",
+          "reason": "得分 1.00，达到正确阈值 0.75"
+        },
+        "wrong_example": {
+          "contract_id": "1-品牌球馆冠名合作协议",
+          "clause_id": "1-品牌球馆冠名合作协议_c001",
+          "clause_text": "牌球馆冠名合作协议",
+          "predicted_text": "无需批注",
+          "reference_text": "关于《品牌球馆冠名合作协议》详细审查意见（共20条）。",
+          "reason": "得分 0.00，低于正确阈值 0.75"
+        }
+      }
+    }
+  ]
+}

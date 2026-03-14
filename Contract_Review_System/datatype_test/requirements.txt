@@ -1,0 +1,17 @@
+# 环境依赖说明 — datatype_test
+# 激活环境：conda activate langchain
+#
+# docling 及以下所有依赖已预装在 langchain 环境中，无需额外安装。
+# 若在新环境中复现，执行：
+#   pip install docling
+# docling 会自动安装 python-docx、torch、torchvision 等子依赖。
+
+# ─── 核心转换 ────────────────────────────────────────────────────────────────
+docling>=2.0.0
+
+# ─── 标准库（已内置，无需安装）────────────────────────────────────────────────
+# json, pathlib, subprocess, datetime, argparse, time
+
+# ─── .doc 转换（可选，LibreOffice 方式不需要 pip，Windows COM 方式同下）────────
+# pywin32 >= 306   # 仅在使用 win32com Word COM 时需要安装
+#   pip install pywin32

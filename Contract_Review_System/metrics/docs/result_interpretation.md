@@ -62,14 +62,28 @@
 
 告警多时，先修数据/解析，再比较模型优劣，否则结论会被噪声影响。
 
+## 5.1 为什么 final_applied 可能不高
+
+`final_applied` 通常是“最终合同结果文档”，不一定是“风险清单格式”。  
+如果把正文编号条款误识别为风险点，会出现高 FP，导致分数显著偏低。  
+因此 `final_applied` 更适合作为参考对照，不应直接视为“理论满分上限”。
+
 ## 6. Prompt-Only 阶段建议
 
 当前阶段建议命令：
 
 ```powershell
+python Contract_Review_System/metrics/scripts/run_prompt_eval.py \
+  --md-run-id 20260316_105814 \
+  --participants third_party,final_applied,agent
+```
+
+或分步命令：
+
+```powershell
 python Contract_Review_System/metrics/scripts/evaluate.py \
   --dataset Contract_Review_System/metrics/outputs/datasets/dataset_20260316_105814.json \
-  --agent-md Contract_Review_System/v1/outputs/ablation_runs/prompt-only/<run_id>/review_report.md \
+  --agent-md Contract_Review_System/metrics/inputs/agent/review_report.md \
   --participants third_party,agent
 ```
 

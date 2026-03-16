@@ -308,7 +308,7 @@ def parse_baseline_markdown(
 
     Args:
         contract_id: Contract identifier.
-        participant: `third_party` or `final_applied`.
+        participant: `third_party`, `final_applied`, or `agent`.
         markdown_path: Baseline markdown path.
 
     Returns:

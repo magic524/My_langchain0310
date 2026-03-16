@@ -18,7 +18,36 @@ conda activate langchain
 pip install -r Contract_Review_System/metrics/requirements.txt
 ```
 
+Prompt-only 模型连接（OpenAI 兼容）默认读取：
+
+- `Contract_Review_System/metrics/.env`（优先）
+- 当前工作目录向上查找的 `.env`（兜底）
+
+关键变量与 `v1/scripts/run_ablation.py` 保持同风格：
+
+- `OPENAI_LLM_MODEL`
+- `OPENAI_API_BASE`（会拼接 `/chat/completions`）
+- `OPENAI_API_KEY`
+- `OPENAI_TEMPERATURE`
+- `OPENAI_EXTRA_BODY`（JSON 字符串）
+
 ## 快速开始（Prompt-Only 推荐）
+
+### 0) 一条命令跑完（推荐）
+
+```powershell
+python Contract_Review_System/metrics/scripts/run_prompt_eval.py \
+  --md-run-id 20260316_105814 \
+  --participants third_party,final_applied,agent
+```
+
+这条命令会自动完成：
+
+- 构建数据集
+- 用 prompt-only 方式逐条款调用模型生成 `agent` 审查结果
+- 计算三方指标（第三方 / 最终审查 / agent）
+- 输出 `evaluation_report.md`、`evaluation_result.json`、`evaluation_metrics.csv`
+- 额外输出 `RUN_TRACE.md`（运行参数与模型配置快照）和 `MISS_ANALYSIS.md`（漏报样例）
 
 ### 1) 构建数据集
 
@@ -32,12 +61,12 @@ python Contract_Review_System/metrics/scripts/build_dataset.py --md-run-id 20260
 Contract_Review_System/metrics/outputs/datasets/dataset_20260316_105814.json
 ```
 
-### 2) 评测 Agent（以 v1 ablation 的 prompt-only 结果为例）
+### 2) 评测 Agent（独立输入，不依赖 v1 目录）
 
 ```powershell
 python Contract_Review_System/metrics/scripts/evaluate.py \
   --dataset Contract_Review_System/metrics/outputs/datasets/dataset_20260316_105814.json \
-  --agent-md Contract_Review_System/v1/outputs/ablation_runs/prompt-only/20260314_092135/review_report.md \
+  --agent-md Contract_Review_System/metrics/inputs/agent/review_report.md \
   --participants third_party,agent
 ```
 
@@ -46,6 +75,16 @@ python Contract_Review_System/metrics/scripts/evaluate.py \
 - `--participants third_party,agent`：现阶段常用对比（第三方 vs 你的 prompt-only Agent）。
 - 若需要加入最终审查意见对比，可改为 `--participants third_party,final_applied,agent`。
 - 也可用 `--agent-json` 输入结构化结果。
+
+### 2.1) Prompt-Only 一键脚本（推荐）
+
+```powershell
+python Contract_Review_System/metrics/scripts/evaluate_prompt_only.py \
+  --md-run-id 20260316_105814 \
+  --agent-md Contract_Review_System/metrics/inputs/agent/review_report.md
+```
+
+默认参与方：`third_party,agent`。
 
 ### 3) 生成报告
 
@@ -68,6 +107,11 @@ python Contract_Review_System/metrics/scripts/report.py \
 - `requirements.txt`：本子项目依赖列表。
 - `README.md`：项目说明、命令、文件职责。
 
+### `inputs/`
+
+- `inputs/agent/`：放置 Agent 预测输入文件（推荐放 `review_report.md` 或 JSON）。
+- `inputs/agent/AGENT_INPUT_TEMPLATE.md`：Markdown 输入模板（便于按约定格式输出）。
+
 ### `config/`
 
 - `defaults.json`：默认评测配置（参与方、匹配阈值、规则判分阈值、是否启用 LLM 裁判）。
@@ -83,6 +127,8 @@ python Contract_Review_System/metrics/scripts/report.py \
 - `build_dataset.py`：从 `outputs_md/{run_id}` 解析并生成统一数据集 JSON。
 - `evaluate.py`：读取数据集 + Agent 预测，计算双口径评测结果。
 - `report.py`：把 `evaluation_payload.json` 渲染成 md/json/csv 报告。
+- `evaluate_prompt_only.py`：prompt-only 专用入口（可自动构建数据集并直接产出报告）。
+- `run_prompt_eval.py`：一条命令完成“建集-推理-评测-出报告”（推荐日常使用）。
 
 ### `src/contract_metrics/`（核心模块）
 
@@ -106,6 +152,7 @@ python Contract_Review_System/metrics/scripts/report.py \
 ### `tests/`
 
 - `conftest.py`：pytest 公共 fixture 与测试初始化。
+- `unit_tests/test_baseline_parser.py`：第三方/最终审查解析过滤规则单测。
 - `unit_tests/test_label_parser.py`：采纳状态与标签抽取单测。
 - `unit_tests/test_matcher.py`：条款匹配与 TP/FP/FN/TN 统计单测。
 - `unit_tests/test_prediction_adapter.py`：JSON/Markdown 预测解析单测。
@@ -119,6 +166,8 @@ python Contract_Review_System/metrics/scripts/report.py \
 - `outputs/eval_runs/<run_id>/evaluation_result.json`：详细结果。
 - `outputs/eval_runs/<run_id>/evaluation_metrics.csv`：指标表。
 - `outputs/eval_runs/<run_id>/README_summary.md`：run 级摘要。
+- `outputs/eval_runs/<run_id>/RUN_TRACE.md`：运行留痕（输入参数、模型配置快照、告警、产物路径）。
+- `outputs/eval_runs/<run_id>/MISS_ANALYSIS.md`：按参与方/口径列出漏报率与 FN 条款样例。
 
 ## Agent JSON 输入协议
 

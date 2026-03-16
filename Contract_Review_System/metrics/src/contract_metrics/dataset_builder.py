@@ -148,6 +148,10 @@ def build_dataset_from_md_run(
                 participant=participant,
                 markdown_path=selected,
             )
+            if not baselines[participant]:
+                warnings.append(
+                    f"{contract_id}: {participant} parsed 0 risk entries (possibly plain revised contract or missing comments)"
+                )
 
         contracts.append(
             ContractDataset(

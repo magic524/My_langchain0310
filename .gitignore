@@ -166,3 +166,6 @@ virtualenv/
 scratch/
 
 .langgraph_api/
+
+outputs/
+outputs_md/

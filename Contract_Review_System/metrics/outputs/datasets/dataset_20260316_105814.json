@@ -1,13 +1,14 @@
 {
   "meta": {
-    "generated_at": "2026-03-16T12:13:58.955833",
+    "generated_at": "2026-03-16T15:47:14.793904",
     "md_run_id": "20260316_105814",
     "run_root": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\datatype_test\\outputs_md\\20260316_105814",
     "contracts": 3
   },
   "warnings": [
     "2-服务协议/2-第三方平台审查结果/Alpha GPT/A-关于《服务协议》的审查意见书: conversion failed (docling_error)",
-    "3-保密协议/2-第三方平台审查结果/关于《保密协议》的审查意见书: conversion failed (docling_error)"
+    "3-保密协议/2-第三方平台审查结果/关于《保密协议》的审查意见书: conversion failed (docling_error)",
+    "3-保密协议: final_applied parsed 0 risk entries (possibly plain revised contract or missing comments)"
   ],
   "contracts": [
     {
@@ -563,17 +564,6 @@
             "status_reason": ""
           },
           {
-            "risk_id": "1-品牌球馆冠名合作协议_third_party_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "本意见书只供委托方进行参考所用，不能视为在司法过程中的法律文书或作证据使用。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2.本意见书只供委托方进行参考所用，不能视为在司法过程中的法律文书或作证据使用。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
             "risk_id": "1-品牌球馆冠名合作协议_third_party_sec_003",
             "contract_id": "1-品牌球馆冠名合作协议",
             "title": "本意见书一式两份，副本若干，其中一份交付委托方，一份由本律师备案归档。",
@@ -807,28 +797,6 @@
         ],
         "final_applied": [
           {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_001",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "双方确立球馆独家冠名合作关系，乙方球馆官方正式名称冠名为“翘曲点XX球馆”（“XX”为乙方原有球馆核心标识，可保留）。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 双方确立球馆独家冠名合作关系，乙方球馆官方正式名称冠名为“翘曲点XX球馆”（“XX”为乙方原有球馆核心标识，可保留）。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "甲方按本协议约定向乙方提供指定物资赞助，乙方按本协议约定向甲方提供品牌冠名及专属曝光权益。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 甲方按本协议约定向乙方提供指定物资赞助，乙方按本协议约定向甲方提供品牌冠名及专属曝光权益。 <!-- image -->",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
             "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_003",
             "contract_id": "1-品牌球馆冠名合作协议",
             "title": "合作期限：自2026年1月20日起至2028年1月20日止，共计2年。合作期限届满前30日，双方可协商续约事宜，同等条件下甲方享有优先续约权。",
@@ -840,138 +808,6 @@
             "status_reason": ""
           },
           {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_006",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "交付要求：甲方需在本协议签订后15个工作日内，将上述所有赞助物资足额交付至乙方球馆指定地点，运输费用由甲方承担。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "6. 交付要求：甲方需在本协议签订后15个工作日内，将上述所有赞助物资足额交付至乙方球馆指定地点，运输费用由甲方承担。 **三、乙方核心权益保障（独家品牌曝光，无竞品冲突）** **（一）冠名权益**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_001",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "，乙方球馆所有官方对外标识均需醒目展示“翘曲点XX球馆”全称及甲方品牌logo，字体规格不小于球馆原有标识字号，logo尺寸不小于30cm×30cm（具体位置、规格双方签字确认后落地）。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. ，乙方球馆所有官方对外标识均需醒目展示“翘曲点XX球馆”全称及甲方品牌logo，字体规格不小于球馆原有标识字号，logo尺寸不小于30cm×30cm（具体位置、规格双方签字确认后落地）。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "乙方对外宣传推广（包括但不限于大众点评、美团、微信公众号、视频号、抖音、线下海报、宣传单页、客户沟通话术等）需统一使用“翘曲点XX球馆”冠名名称，不得擅自变更、删减或遮挡甲方品牌信息。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 乙方对外宣传推广（包括但不限于大众点评、美团、微信公众号、视频号、抖音、线下海报、宣传单页、客户沟通话术等）需统一使用“翘曲点XX球馆”冠名名称，不得擅自变更、删减或遮挡甲方品牌信息。 **（二）场地品牌曝光权益**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_001",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "乙方需在球馆所有匹克球场地的非截击区地面，统一喷涂甲方“翘曲点”品牌logo（具体位置、尺寸、颜色由甲方提供规范文件，双方确认后执行）。乙方负责保障logo清晰完整，无遮挡、无磨损，若因正常使用出现磨损，需重新喷涂。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 乙方需在球馆所有匹克球场地的非截击区地面，统一喷涂甲方“翘曲点”品牌logo（具体位置、尺寸、颜色由甲方提供规范文件，双方确认后执行）。乙方负责保障logo清晰完整，无遮挡、无磨损，若因正常使用出现磨损，需重新喷涂。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "乙方需在球馆核心位置（包括但不限于场地主入口、观众观赛区、客户休息区）为甲方提供3个专属广告位。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 乙方需在球馆核心位置（包括但不限于场地主入口、观众观赛区、客户休息区）为甲方提供3个专属广告位。 甲方负责提供广告画面设计稿，乙方负责免费完成广告画面的安装、更换。 <!-- image --> **（三）无竞品承诺**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_001",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "按本协议约定的时间、规格、数量向乙方交付赞助物资，确保物资为全新、合格的正品，符合赛事级使用要求，并提供相关质量合格证明。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 按本协议约定的时间、规格、数量向乙方交付赞助物资，确保物资为全新、合格的正品，符合赛事级使用要求，并提供相关质量合格证明。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "及时向乙方提供品牌logo、广告设计规范、冠名名称使用规范等相关文件，配合乙方完成冠名及品牌曝光的落地工作。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 及时向乙方提供品牌logo、广告设计规范、冠名名称使用规范等相关文件，配合乙方完成冠名及品牌曝光的落地工作。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_003",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "合作期内，甲方可优先使用冠名球馆举办品牌赛事、产品试打、客户沙龙等活动，乙方需提供场地协调、基础配套（如灯光、座椅）等便利支持，活动具体事宜双方另行协商。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3. 合作期内，甲方可优先使用冠名球馆举办品牌赛事、产品试打、客户沙龙等活动，乙方需提供场地协调、基础配套（如灯光、座椅）等便利支持，活动具体事宜双方另行协商。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_004",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "甲方不得要求乙方从事违反法律法规、公序良俗的宣传推广活动。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "4. 甲方不得要求乙方从事违反法律法规、公序良俗的宣传推广活动。 **（二）乙方与义务** <!-- image -->",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_001",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "本协议签订后15个工作日内，完成球馆冠名更名、门头标识更换、logo地面喷涂、广告位安装、品牌展架摆放等所有品牌曝光权益的落地工作，并拍摄清晰的现场照片（不少于10张，含整体场景及细节特写）、视频（时长不少于1分钟）提交甲方验收，验收合格后方视为完成落地。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 本协议签订后15个工作日内，完成球馆冠名更名、门头标识更换、logo地面喷涂、广告位安装、品牌展架摆放等所有品牌曝光权益的落地工作，并拍摄清晰的现场照片（不少于10张，含整体场景及细节特写）、视频（时长不少于1分钟）提交甲方验收，验收合格后方视为完成落地。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "合作期内，妥善保管甲方赞助的物资，除正常使用损耗外，因乙方人为原因导致物资损坏、丢失的，需通知甲方并负责维修或按原价赔偿。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 合作期内，妥善保管甲方赞助的物资，除正常使用损耗外，因乙方人为原因导致物资损坏、丢失的，需通知甲方并负责维修或按原价赔偿。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_003",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "定期检查甲方品牌曝光资源（冠名标识、logo、广告位、展架等）的完整性，发现问题及时整改，确保品牌形象不受影响。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3. 定期检查甲方品牌曝光资源（冠名标识、logo、广告位、展架等）的完整性，发现问题及时整改，确保品牌形象不受影响。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
             "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_004",
             "contract_id": "1-品牌球馆冠名合作协议",
             "title": "主动向球馆客户介绍、推荐翘曲点品牌及产品，配合甲方的品牌推广需求，不得故意诋毁或误导客户。",
@@ -979,50 +815,6 @@
             "explanation": "",
             "suggestion": "",
             "source_excerpt": "4. 主动向球馆客户介绍、推荐翘曲点品牌及产品，配合甲方的品牌推广需求，不得故意诋毁或误导客户。【批注#31/段落67/作者曾梅梅: 乙方介绍、推广是否有指标？请明确。】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_005",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "若球馆需进行装修、改造或调整布局，涉及甲方品牌曝光资源的，需提前7个工作日书面通知甲方，经甲方同意后方可实施，且需保障调整后甲方品牌曝光权益不降低。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "5. 若球馆需进行装修、改造或调整布局，涉及甲方品牌曝光资源的，需提前7个工作日书面通知甲方，经甲方同意后方可实施，且需保障调整后甲方品牌曝光权益不降低。 **五、违约责任**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_001",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "若甲方未按本协议约定时间交付赞助物资，逾期超过30日的，乙方有权解除本协议。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 若甲方未按本协议约定时间交付赞助物资，逾期超过30日的，乙方有权解除本协议。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "若甲方交付的赞助物资存在质量问题，不符合赛事级标准，甲方需在7个工作日内更换合格物资，逾期未更换的，乙方有权要求甲方赔偿损失。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 若甲方交付的赞助物资存在质量问题，不符合赛事级标准，甲方需在7个工作日内更换合格物资，逾期未更换的，乙方有权要求甲方赔偿损失。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_003",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "若乙方未按本协议约定完成冠名、logo喷涂、广告位提供等品牌曝光权益落地，或未通过验收，甲方有权要求乙方限期整改，整改无效的，甲方有权解除本协议，并赔偿甲方因此的全部损失（包括但不限于物资成本、品牌推广损失等）。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3. 若乙方未按本协议约定完成冠名、logo喷涂、广告位提供等品牌曝光权益落地，或未通过验收，甲方有权要求乙方限期整改，整改无效的，甲方有权解除本协议，并赔偿甲方因此的全部损失（包括但不限于物资成本、品牌推广损失等）。 <!-- image -->",
             "status": "other",
             "status_reason": ""
           },
@@ -1045,83 +837,6 @@
             "explanation": "",
             "suggestion": "",
             "source_excerpt": "5. 若乙方擅自变更、删减冠名名称或遮挡、拆除甲方品牌曝光资源，甲方有权要求乙方限期恢复；逾期未恢复的，甲方有权解除本协议，乙方需赔偿甲方损失。【批注#45/段落74/作者曾梅梅: 同上】 **六、协议的解除与终止**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_001",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "双方协商一致，可书面解除本协议。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 双方协商一致，可书面解除本协议。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "一方严重违反本协议约定，经另一方催告后仍未整改的，另一方有权解除本协议。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 一方严重违反本协议约定，经另一方催告后仍未整改的，另一方有权解除本协议。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_003",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "合作期限届满，本协议自动终止；若双方协商续约，需另行签订书面协议。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3. 合作期限届满，本协议自动终止；若双方协商续约，需另行签订书面协议。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_004",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "协议解除或终止后，乙方需停止使用“翘曲点”冠名名称及品牌相关标识，若甲方同意乙方继续使用赞助物资，物资所有权归乙方所有；若甲方要求收回物资，乙方需配合返还（正常使用损耗除外）。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "4. 协议解除或终止后，乙方需停止使用“翘曲点”冠名名称及品牌相关标识，若甲方同意乙方继续使用赞助物资，物资所有权归乙方所有；若甲方要求收回物资，乙方需配合返还（正常使用损耗除外）。 **七、争议解决** 本协议履行过程中发生的任何争议，双方应首先友好协商解决；协商不成的，任何一方均有权向所在地人民法院提起诉讼。 **八、其他约定**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_001",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "本协议未尽事宜，双方可另行签订补充协议，补充协议与本协议具有同等法律效力。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 本协议未尽事宜，双方可另行签订补充协议，补充协议与本协议具有同等法律效力。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_002",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "本协议所有附件（包括但不限于落地验收清单、品牌规范文件、物资清单等）均为本协议不可分割的组成部分，与本协议具有同等法律效力。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 本协议所有附件（包括但不限于落地验收清单、品牌规范文件、物资清单等）均为本协议不可分割的组成部分，与本协议具有同等法律效力。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "1-品牌球馆冠名合作协议_final_applied_sec_003",
-            "contract_id": "1-品牌球馆冠名合作协议",
-            "title": "本协议一式两份，甲乙双方各执一份，自双方签字盖章之日起生效，具有同等法律效力。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3. 本协议一式两份，甲乙双方各执一份，自双方签字盖章之日起生效，具有同等法律效力。 （以下无正文） **甲方（盖章/签字）：\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_** 日期： 年 月 日 **乙方（盖章/签字）：\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_** 日期： 年 月 日",
             "status": "other",
             "status_reason": ""
           },
@@ -1410,83 +1125,6 @@
       "baselines": {
         "third_party": [
           {
-            "risk_id": "2-服务协议_third_party_sec_001",
-            "contract_id": "2-服务协议",
-            "title": "服务项目：车播放器软件升级",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1、服务项目：车播放器软件升级",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_002",
-            "contract_id": "2-服务协议",
-            "title": "服务产品：HPH07播放器",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2、服务产品：HPH07播放器",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_003",
-            "contract_id": "2-服务协议",
-            "title": "服务地点：坦桑尼亚",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3、服务地点：坦桑尼亚",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_004",
-            "contract_id": "2-服务协议",
-            "title": "服务完成时间：至2026年03月31日",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "4、服务完成时间：至2026年03月31日",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_005",
-            "contract_id": "2-服务协议",
-            "title": "服务内容简述：",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "5、服务内容简述：",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_005",
-            "contract_id": "2-服务协议",
-            "title": "1  服务期内，乙方安排人员在坦桑尼亚国家对甲方在客车上装配的253台播放器产品进行软件升级，服务截止时间之前完成全部车辆的软件升级工作。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "5.1 服务期内，乙方安排人员在坦桑尼亚国家对甲方在客车上装配的253台播放器产品进行软件升级，服务截止时间之前完成全部车辆的软件升级工作。 **二、双方权利与义务**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_001",
-            "contract_id": "2-服务协议",
-            "title": "甲方有权要求乙方按照本协议约定提供售后服务，对乙方的服务质量进行监督、提出意见和建议；在服务过程中，有权了解升级过程、进度等相关信息。乙方服务的甲方。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1、甲方有权要求乙方按照本协议约定提供售后服务，对乙方的服务质量进行监督、提出意见和建议；在服务过程中，有权了解升级过程、进度等相关信息。乙方服务的甲方。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
             "risk_id": "2-服务协议_third_party_sec_002",
             "contract_id": "2-服务协议",
             "title": "乙方在服务过程中，有权要求甲方提供必要的配合和相关资料；配备专业的技术人员，为甲方提供专业、高效、优质的服务；严格遵守服务规范和操作流程，保证服务质量；在服务过程中，不得损坏甲方的其他财产，如因乙方原因造成甲方财产损失的，应承担赔偿责任；对服务过程中接触到的甲方商业秘密、技术信息等承担保密义务，不得向任何第三方泄露。",
@@ -1494,17 +1132,6 @@
             "explanation": "",
             "suggestion": "",
             "source_excerpt": "2、乙方在服务过程中，有权要求甲方提供必要的配合和相关资料；配备专业的技术人员，为甲方提供专业、高效、优质的服务；严格遵守服务规范和操作流程，保证服务质量；在服务过程中，不得损坏甲方的其他财产，如因乙方原因造成甲方财产损失的，应承担赔偿责任；对服务过程中接触到的甲方商业秘密、技术信息等承担保密义务，不得向任何第三方泄露。 **三、服务费用及付款方式** 本协议约定的服务范围，2026年1月20日前提供服务费用发票，甲方收到发票后5个工作日内向乙方支付元；2026年2月5日前提供服务费用发票，甲方收到发票后5个工作日内向乙方支付元。 **四、违约责任**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_001",
-            "contract_id": "2-服务协议",
-            "title": "若乙方未按照本协议约定的服务范围、时间提供服务，或服务质量不符合约定，给甲方造成损失的，乙方应承担相应的赔偿责任；情节严重的，甲方有权解除本协议，并要求乙方退还已支付的服务费用（如有）；",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1、若乙方未按照本协议约定的服务范围、时间提供服务，或服务质量不符合约定，给甲方造成损失的，乙方应承担相应的赔偿责任；情节严重的，甲方有权解除本协议，并要求乙方退还已支付的服务费用（如有）；",
             "status": "other",
             "status_reason": ""
           },
@@ -1518,86 +1145,9 @@
             "source_excerpt": "2、任何一方违反本协议约定的保密义务，泄露对方商业秘密或技术信息，给对方造成损失的，应赔偿； **五、争议解决** 本协议的签订、履行、解释及争议解决均适用中华人民共和国法律。 双方在履行本协议过程中发生的任何争议，应首先通过友好协商解决；协商不成的，任何一方均有权向甲方所在地人民法院提起诉讼。",
             "status": "other",
             "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_001",
-            "contract_id": "2-服务协议",
-            "title": "本协议未尽事宜，双方可另行签订补充协议，补充协议与本协议内容冲突的，以补充协议为准；",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 本协议未尽事宜，双方可另行签订补充协议，补充协议与本协议内容冲突的，以补充协议为准；",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_002",
-            "contract_id": "2-服务协议",
-            "title": "本协议一式两份，甲乙双方各执一份，自双方签字盖章之日起生效，具有同等法律效力；",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 本协议一式两份，甲乙双方各执一份，自双方签字盖章之日起生效，具有同等法律效力；",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_third_party_sec_003",
-            "contract_id": "2-服务协议",
-            "title": "本协议项下的任何通知、函件等，应以书面形式（包括但不限于传真、邮件、专人送达）送达对方，送达地址为双方本协议载明的地址，一方地址变更的，应提前10天书面通知对方，否则因此产生的送达不能等后果由该方自行承担。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3. 本协议项下的任何通知、函件等，应以书面形式（包括但不限于传真、邮件、专人送达）送达对方，送达地址为双方本协议载明的地址，一方地址变更的，应提前10天书面通知对方，否则因此产生的送达不能等后果由该方自行承担。 （以下无正文） 甲方： 乙方：无锡质鼎技术咨询服务有限公司 签字及盖章： 签字及盖章：",
-            "status": "other",
-            "status_reason": ""
           }
         ],
         "final_applied": [
-          {
-            "risk_id": "2-服务协议_final_applied_sec_001",
-            "contract_id": "2-服务协议",
-            "title": "服务项目：宇通客车坦桑尼亚253台车播放器软件升级",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1、服务项目：宇通客车坦桑尼亚253台车播放器软件升级",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_final_applied_sec_002",
-            "contract_id": "2-服务协议",
-            "title": "服务产品：HPH07播放器",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2、服务产品：HPH07播放器",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_final_applied_sec_003",
-            "contract_id": "2-服务协议",
-            "title": "服务地点：坦桑尼亚",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3、服务地点：坦桑尼亚",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_final_applied_sec_004",
-            "contract_id": "2-服务协议",
-            "title": "服务完成时间：至 2026年03月31日前",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "4、服务完成时间：至 2026年03月31日前 5、 服务内容简述： .1 服务期内，乙方安排人员在坦桑尼亚国家对甲方在宇通客车上装配的253台播放器产品进行软件升级，服务截止时间之前完成全部车辆的软件升级工作。",
-            "status": "other",
-            "status_reason": ""
-          },
           {
             "risk_id": "2-服务协议_final_applied_sec_001",
             "contract_id": "2-服务协议",
@@ -1610,17 +1160,6 @@
             "status_reason": ""
           },
           {
-            "risk_id": "2-服务协议_final_applied_sec_002",
-            "contract_id": "2-服务协议",
-            "title": "乙方在服务过程中，有权要求甲方提供必要的配合和相关资料；配备专业的技术人员，为甲方提供专业、高效、优质的服务；严格遵守服务规范和操作流程，保证服务质量；在服务过程中，不得损坏甲方的其他财产，如因乙方原因造成甲方财产损失的，应承担赔偿责任；对服务过程中接触到的甲方商业秘密、技术信息等承担保密义务，不得向任何第三方泄露。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2、乙方在服务过程中，有权要求甲方提供必要的配合和相关资料；配备专业的技术人员，为甲方提供专业、高效、优质的服务；严格遵守服务规范和操作流程，保证服务质量；在服务过程中，不得损坏甲方的其他财产，如因乙方原因造成甲方财产损失的，应承担赔偿责任；对服务过程中接触到的甲方商业秘密、技术信息等承担保密义务，不得向任何第三方泄露。 **三、服务费用及付款方式** 2026年1月20日前，乙方提供\\_\\_\\_\\_\\_\\_元服务费用发票，甲方收到发票后5个工作日内向乙方支付\\_\\_\\_\\_\\_\\_元；2026年2月5日前，乙方提供\\_\\_\\_\\_\\_\\_元服务费用发票，甲方收到发票后5个工作日内向乙方支付 元。 **四、违约责任**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
             "risk_id": "2-服务协议_final_applied_sec_001",
             "contract_id": "2-服务协议",
             "title": "若乙方未按照本协议约定的服务范围、时间提供服务，或服务质量不符合约定，给甲方造成损失的，乙方应承担相应的赔偿责任；情节严重的，甲方有权解除本协议，并要求乙方退还已支付的服务费用（如有）；",
@@ -1628,50 +1167,6 @@
             "explanation": "",
             "suggestion": "",
             "source_excerpt": "1、若乙方未按照本协议约定的服务范围、时间提供服务，或服务质量不符合约定，给甲方造成损失的，乙方应承担相应的赔偿责任；情节严重的，甲方有权解除本协议，并要求乙方退还已支付的服务费用（如有）；【批注#44/段落26/作者曾梅梅: 同上，请补充第6.2条质量标准】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_final_applied_sec_002",
-            "contract_id": "2-服务协议",
-            "title": "任何一方违反本协议约定的保密义务，泄露对方商业秘密或技术信息，给对方造成损失的，应承担全部赔偿责任；",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2、任何一方违反本协议约定的保密义务，泄露对方商业秘密或技术信息，给对方造成损失的，应承担全部赔偿责任； **五、争议解决** 本协议的签订、履行、解释及争议解决均适用中华人民共和国法律。 双方在履行本协议过程中发生的任何争议，应首先通过友好协商解决；协商不成的，任何一方均有权向甲方所在地人民法院提起诉讼。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_final_applied_sec_001",
-            "contract_id": "2-服务协议",
-            "title": "本协议未尽事宜，双方可另行签订补充协议，补充协议与本协议内容冲突的，以补充协议为准；",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "1. 本协议未尽事宜，双方可另行签订补充协议，补充协议与本协议内容冲突的，以补充协议为准；",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_final_applied_sec_002",
-            "contract_id": "2-服务协议",
-            "title": "本协议一式两份，甲乙双方各执一份，自双方签字盖章之日起生效，具有同等法律效力；",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "2. 本协议一式两份，甲乙双方各执一份，自双方签字盖章之日起生效，具有同等法律效力；",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "2-服务协议_final_applied_sec_003",
-            "contract_id": "2-服务协议",
-            "title": "本协议项下的任何通知、函件等，应以书面形式（包括但不限于传真、邮件、专人送达）送达对方，送达地址为双方本协议载明的地址，一方地址变更的，应提前10天书面通知对方，否则因此产生的送达不能等后果由该方自行承担。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3. 本协议项下的任何通知、函件等，应以书面形式（包括但不限于传真、邮件、专人送达）送达对方，送达地址为双方本协议载明的地址，一方地址变更的，应提前10天书面通知对方，否则因此产生的送达不能等后果由该方自行承担。 （以下无正文） 甲方：厦门盈趣汽车电子有限公司 乙方：无锡质鼎技术咨询服务有限公司 签字及盖章： 签字及盖章：",
             "status": "other",
             "status_reason": ""
           },
@@ -1849,17 +1344,6 @@
             "status_reason": ""
           },
           {
-            "risk_id": "3-保密协议_third_party_rep_002",
-            "contract_id": "3-保密协议",
-            "title": "保密信息内容",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "在本协议中， **保密信息** 是指由甲方向乙方以任何形式提供的与 **该项目** 有关的任何信息(含专有信息)和文件，如书面、数据电文、口头交流或讨论。以上述方式提供的 保密信息 应属于甲方的财产，许可使用权(除为本协议之目的外)或有关 保密信息 的其他权利不应视作授予了乙方。【样式/段落23: underline】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
             "risk_id": "3-保密协议_third_party_rep_003",
             "contract_id": "3-保密协议",
             "title": "保密义务",
@@ -1915,61 +1399,6 @@
             "status_reason": ""
           },
           {
-            "risk_id": "3-保密协议_third_party_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "2\t乙方承诺不向任何第三方披露 保密信息 ，不将 保密信息 用于除本协议目的之外的其他任何目的，并保证不利用这些保密信息试制、制造和销售相同或类似的零部件。【样式/段落29: underline】",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.2 乙方承诺不向任何第三方披露 保密信息 ，不将 保密信息 用于除本协议目的之外的其他任何目的，并保证不利用这些保密信息试制、制造和销售相同或类似的零部件。【样式/段落29: underline】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_third_party_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "3 乙方仅向所需最小限度的乙方职工出示所述技术资料文件，并责成该职工承担本协议项下的保密义务。万一该职工发生了违反本协议规定的行为时，乙方将承担赔偿甲方损失的连带责任。甲方有权立即终止与乙方的一切商务活动。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.3 乙方仅向所需最小限度的乙方职工出示所述技术资料文件，并责成该职工承担本协议项下的保密义务。万一该职工发生了违反本协议规定的行为时，乙方将承担赔偿甲方损失的连带责任。甲方有权立即终止与乙方的一切商务活动。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_third_party_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "4 乙方严格管理与 **该项目** 相关的保密信息。不向除本协议规定的乙方职工以外的其他任何人出示，并不使其发生灭失、丢失等事故。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.4 乙方严格管理与 **该项目** 相关的保密信息。不向除本协议规定的乙方职工以外的其他任何人出示，并不使其发生灭失、丢失等事故。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_third_party_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "5 乙方保证严格控制与 **该项目** 产品相关的技术资料文件等的复印、眷录或其它记忆媒体的读入，并保证把因开发设计、试制本协议产品而不得不复印、眷录或用其它记忆媒体读入的任何技术资料文件详细的清单、数量书面通知甲方。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.5 乙方保证严格控制与 **该项目** 产品相关的技术资料文件等的复印、眷录或其它记忆媒体的读入，并保证把因开发设计、试制本协议产品而不得不复印、眷录或用其它记忆媒体读入的任何技术资料文件详细的清单、数量书面通知甲方。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_third_party_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "6方将甲方获得的零部件价格资料、零部件结构图纸、技术规格、实验方法等信息当作机密对待，不向除方职工以外的其他任何人出示，并不使其发生灭失、丢失等事故。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.6方将甲方获得的零部件价格资料、零部件结构图纸、技术规格、实验方法等信息当作机密对待，不向除方职工以外的其他任何人出示，并不使其发生灭失、丢失等事故。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
             "risk_id": "3-保密协议_third_party_sec_005",
             "contract_id": "3-保密协议",
             "title": "1因乙方违反本协议给甲方造成损失的，应赔偿甲方因此所遭受的直接经济损失不甲方方的的。",
@@ -1977,17 +1406,6 @@
             "explanation": "",
             "suggestion": "",
             "source_excerpt": "5.1因乙方违反本协议给甲方造成损失的，应赔偿甲方因此所遭受的直接经济损失不甲方方的的。【批注#24/段落45/作者Mia: 【风险点】赔偿责任范围及上限需合理限定，排除客户损失【说明】原条款赔偿范围过宽且无上限，包含甲方及其客户的损失，且未限定损失的可预见性，可能导致乙方承担过重且不确定的赔偿责任。修改后明确赔偿范围仅限于甲方自身的直接经济损失，并设置赔偿上限，有效控制乙方风险。【修改建议】因乙方违反本协议给甲方造成损失的，应赔偿甲方因此所遭受的直接和间接的经济损失，包括但。乙方的累计赔偿总额不限于应超过甲方及甲依据本协议向乙方披露的客户投入保密信息本身在披露时的人力、物力、财力等合理市场价值。】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_third_party_sec_005",
-            "contract_id": "3-保密协议",
-            "title": "2本协议，乙方从甲方的与 **该项目** 相关的技术资料文件的原件复印、录及媒体信息资料还甲方。甲方将保留对有关本协议所述保密信息因乙方原因外泄而造成甲方损失的索赔权利。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "5．2本协议，乙方从甲方的与 **该项目** 相关的技术资料文件的原件复印、录及媒体信息资料还甲方。甲方将保留对有关本协议所述保密信息因乙方原因外泄而造成甲方损失的索赔权利。",
             "status": "other",
             "status_reason": ""
           },
@@ -2036,162 +1454,7 @@
             "status_reason": ""
           }
         ],
-        "final_applied": [
-          {
-            "risk_id": "3-保密协议_final_applied_rep_001",
-            "contract_id": "3-保密协议",
-            "title": "本协议的目的",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "本协议的目的是：设定一些双方同意的条款、条件和原则，以便甲方向乙方提供 保密信息 供乙方研究 **该项目** 。【样式/段落20: underline】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_rep_002",
-            "contract_id": "3-保密协议",
-            "title": "保密信息内容",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "在本协议中， **保密信息** 是指由甲方向乙方以任何形式提供的与 **该项目** 有关的任何信息(含专有信息)和文件，如书面、数据电文、口头交流或讨论。以上述方式提供的 保密信息 应属于甲方的财产，许可使用权(除为本协议之目的外)或有关 保密信息 的其他权利不应视作授予了乙方。【样式/段落23: underline】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_rep_003",
-            "contract_id": "3-保密协议",
-            "title": "保密义务",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "自披露方或其知情人员披露保密信息之日起，接收方应履行以下义务： 3.1 未经甲方事先书面同意，乙方不得直接或间接向第三方披露本协议的存在或 **该项目** 的存在。【样式/段落27: underline】 3.2 乙方承诺不向任何第三方披露 保密信息 ，不将 保密信息 用于除本协议目的之外的其他任何目的，并保证不利用这些保密信息试制、制造和销售相同或类似的零部件。【样式/段落29: underline】 3.3 乙方仅向所需最",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_rep_004",
-            "contract_id": "3-保密协议",
-            "title": "保密期限",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "除非双方以书面方式同意解除一方或双方在本协议项下的部分或全部保密义务，否则，接收方应对在 **该项目** 中获得的披露方保密信息承担持续的保密义务，直至这些保密信息因非接收方原因被公开为止。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_rep_005",
-            "contract_id": "3-保密协议",
-            "title": "违约责任",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "5.1因乙方违反本协议给甲方造成损失的，应赔偿甲方因此所遭受的直接经济损失。 5．2无论何种原因致使甲、乙双方不能继续执行本协议，乙方保证无条件、无偿把所有从甲方得到的与 **该项目** 相关的一切技术资料文件的原件和一切复印、眷录及其它已读入记忆的媒体等信息资料交还给甲方。甲方将保留对有关本协议所述保密信息因乙方原因外泄而造成甲方损失的索赔权利。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_rep_006",
-            "contract_id": "3-保密协议",
-            "title": "解决纠纷的方式",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "如果双方对本协议的履行发生争议，应该本着诚实信用的原则，协商解决，协商不成，应提交甲方所地的人民法院管辖。 **甲方：江苏陶浦汽车部件有限公司 乙方：上海艾铭思汽车控制系统有限公司** **签名： 签名：**",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "1\t未经甲方事先书面同意，乙方不得直接或间接向第三方披露本协议的存在或 **该项目** 的存在。【样式/段落27: underline】",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.1 未经甲方事先书面同意，乙方不得直接或间接向第三方披露本协议的存在或 **该项目** 的存在。【样式/段落27: underline】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "2\t乙方承诺不向任何第三方披露 保密信息 ，不将 保密信息 用于除本协议目的之外的其他任何目的，并保证不利用这些保密信息试制、制造和销售相同或类似的零部件。【样式/段落29: underline】",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.2 乙方承诺不向任何第三方披露 保密信息 ，不将 保密信息 用于除本协议目的之外的其他任何目的，并保证不利用这些保密信息试制、制造和销售相同或类似的零部件。【样式/段落29: underline】",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "3 乙方仅向所需最小限度的乙方职工出示所述技术资料文件，并责成该职工承担本协议项下的保密义务。万一该职工发生了违反本协议规定的行为时，乙方将承担赔偿甲方损失的连带责任。甲方有权立即终止与乙方的一切商务活动。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.3 乙方仅向所需最小限度的乙方职工出示所述技术资料文件，并责成该职工承担本协议项下的保密义务。万一该职工发生了违反本协议规定的行为时，乙方将承担赔偿甲方损失的连带责任。甲方有权立即终止与乙方的一切商务活动。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "4 乙方严格管理与 **该项目** 相关的保密信息。不向除本协议规定的乙方职工以外的其他任何人出示，并不使其发生灭失、丢失等事故。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.4 乙方严格管理与 **该项目** 相关的保密信息。不向除本协议规定的乙方职工以外的其他任何人出示，并不使其发生灭失、丢失等事故。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "5 乙方保证严格控制与 **该项目** 产品相关的技术资料文件等的复印、眷录或其它记忆媒体的读入，并保证把因开发设计、试制本协议产品而不得不复印、眷录或用其它记忆媒体读入的任何技术资料文件详细的清单、数量书面通知甲方。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.5 乙方保证严格控制与 **该项目** 产品相关的技术资料文件等的复印、眷录或其它记忆媒体的读入，并保证把因开发设计、试制本协议产品而不得不复印、眷录或用其它记忆媒体读入的任何技术资料文件详细的清单、数量书面通知甲方。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_sec_003",
-            "contract_id": "3-保密协议",
-            "title": "6将甲方获得的零部件价格资料、零部件结构图纸、技术规格、实验方法等信息当作机密对待，不向除职工以外的其他任何人出示，并不使其发生灭失、丢失等事故。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "3.6将甲方获得的零部件价格资料、零部件结构图纸、技术规格、实验方法等信息当作机密对待，不向除职工以外的其他任何人出示，并不使其发生灭失、丢失等事故。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_sec_005",
-            "contract_id": "3-保密协议",
-            "title": "1因乙方违反本协议给甲方造成损失的，应赔偿甲方因此所遭受的直接经济损失。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "5.1因乙方违反本协议给甲方造成损失的，应赔偿甲方因此所遭受的直接经济损失。",
-            "status": "other",
-            "status_reason": ""
-          },
-          {
-            "risk_id": "3-保密协议_final_applied_sec_005",
-            "contract_id": "3-保密协议",
-            "title": "2无论何种原因致使甲、乙双方不能继续执行本协议，乙方保证无条件、无偿把所有从甲方得到的与 **该项目** 相关的一切技术资料文件的原件和一切复印、眷录及其它已读入记忆的媒体等信息资料交还给甲方。甲方将保留对有关本协议所述保密信息因乙方原因外泄而造成甲方损失的索赔权利。",
-            "clause_text": "",
-            "explanation": "",
-            "suggestion": "",
-            "source_excerpt": "5．2无论何种原因致使甲、乙双方不能继续执行本协议，乙方保证无条件、无偿把所有从甲方得到的与 **该项目** 相关的一切技术资料文件的原件和一切复印、眷录及其它已读入记忆的媒体等信息资料交还给甲方。甲方将保留对有关本协议所述保密信息因乙方原因外泄而造成甲方损失的索赔权利。",
-            "status": "other",
-            "status_reason": ""
-          }
-        ]
+        "final_applied": []
       }
     }
   ]

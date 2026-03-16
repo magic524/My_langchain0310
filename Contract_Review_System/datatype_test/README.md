@@ -75,6 +75,114 @@ python convert.py --help
 
 ---
 
+## AI 对话识别测试（新）
+
+为下一步合同审查 agent 做准备，新增 `chat_md_test.py`：
+
+- 输入：`convert.py` 生成的 `output.md`
+- 方式：两轮对话自动测试（结构化抽取 + 自检对话）
+- 输出：
+    - `reports/{timestamp}_chat_test_{sample_id}.md`（可读报告）
+    - `reports/{timestamp}_chat_test_{sample_id}.json`（结构化结果）
+
+### 1) 自动评分模式（推荐）
+
+```powershell
+# 方式 A：按 run_id + sample_id 自动定位 output.md
+python chat_md_test.py --run-id 20260314_fixcheck --sample-id 1-brand-venue
+
+# 方式 B：直接指定 Markdown 路径
+python chat_md_test.py --md-path outputs/20260314_fixcheck/1-brand-venue/output.md
+```
+
+### 2) 手动多轮对话模式
+
+```powershell
+python chat_md_test.py --run-id 20260314_fixcheck --sample-id 1-brand-venue --interactive
+```
+
+### 3) .env 兼容约定（参考 v1 接口风格）
+
+脚本读取 `datatype_test/.env`，兼容以下变量：
+
+- `OPENAI_API_BASE` / `OPENAI_BASE_URL`
+- `OPENAI_API_KEY`（本地网关可为 `EMPTY`）
+- `OPENAI_LLM_MODEL` / `OPENAI_MODEL_NAME` / `OPENAI_MODEL`
+- `OPENAI_TEMPERATURE`
+- `OPENAI_EXTRA_BODY`（JSON，可选）
+
+说明：本脚本与 v1 完全独立，不调用 v1 包，仅参考其 OpenAI 兼容接口设计与环境变量命名。
+
+---
+
+## Markdown 专用转换（新）
+
+新增 `convert_md.py`，用于直接生产模型输入的 Markdown：
+
+- 仅输出 `output.md` + `meta.json`
+- 不输出 HTML/JSON
+- 不生成对比汇总报告
+- 目录模式下保持输入子目录层级（输出路径镜像输入路径）
+- 自动抽取 Word 批注并“就地”注入到 Markdown 对应段落附近（不再单独尾部贴全量批注）
+- 自动抽取 Word 样式提示（颜色/高亮/下划线/斜体）并就地注入，减少关键信息丢失
+
+### 单文件转换
+
+```powershell
+python convert_md.py --input-file data/合同数据-2026.3.12/2-服务协议/1-原合同-服务协议.docx
+```
+
+### 文件夹批量转换
+
+```powershell
+# 仅当前目录
+python convert_md.py --input-dir data/合同数据-2026.3.12/2-服务协议
+
+# 递归子目录
+python convert_md.py --input-dir data/合同数据-2026.3.12 --recursive
+```
+
+### 常用可选参数
+
+- `--output-dir`：指定输出根目录（默认 `datatype_test/outputs_md`）
+- `--run-id`：手工指定运行批次 ID
+- `--no-postprocess`：关闭 Markdown 轻量纠偏（默认开启）
+
+输出目录示例：
+
+```txt
+outputs_md/{run_id}/{sample_id}/output.md
+outputs_md/{run_id}/{sample_id}/meta.json
+outputs_md/{run_id}/run_summary.json
+```
+
+目录镜像示例（递归模式）：
+
+```txt
+输入: data/合同数据-2026.3.12/1-品牌球馆冠名合作协议/2-第三方平台审查结果/Alpha GPT/修订批注版-品牌球馆冠名合作协议.docx
+输出: outputs_md/{run_id}/1-品牌球馆冠名合作协议/2-第三方平台审查结果/Alpha GPT/修订批注版-品牌球馆冠名合作协议/output.md
+```
+
+批注与样式输出说明：
+
+- `output.md` 中在对应段落下方追加：
+    - `> [批注锚点#comment_id | 段落:n | 作者:xxx] 批注内容`
+    - `> [样式提示 | 段落:n] color#RRGGBB, highlight:yellow, underline ...`
+- `meta.json` 新增字段：
+    - `comment_anchor_count`
+    - `comment_anchors`（包含 `comment_id`、`author`、`comment_text`、`paragraph_index`、`paragraph_excerpt`）
+    - `style_hint_count`
+    - `style_hints`
+    - `inline_injection`（匹配成功/未命中统计）
+
+关于 Docling 与样式保真：
+
+- Docling 导出 Markdown 对结构（标题、列表、表格）保留较好。
+- 但 Markdown 语法本身无法完整表达字体颜色、字号、字重等 Word 细节。
+- 因此脚本采用“样式提示锚注”折中方案，把关键样式作为结构化提示附到对应段落，便于模型判断。
+
+---
+
 ## doc 文件处理策略
 
 对于 `.doc` 格式（保密协议），脚本按以下优先级尝试转换为 `.docx`，再送入 Docling：

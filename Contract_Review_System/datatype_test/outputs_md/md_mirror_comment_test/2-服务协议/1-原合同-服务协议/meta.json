@@ -1,0 +1,18 @@
+{
+  "run_id": "md_mirror_comment_test",
+  "timestamp": "2026-03-16T09:49:25.291118",
+  "sample_id": "2-服务协议/1-原合同-服务协议",
+  "source_path": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\2-服务协议\\1-原合同-服务协议.docx",
+  "file_type": "docx",
+  "device": "cpu",
+  "elapsed_seconds": 0.1,
+  "doc_conversion": null,
+  "docling_error": "",
+  "md_export": {
+    "status": "ok",
+    "error": ""
+  },
+  "comment_anchor_count": 0,
+  "comment_anchors": [],
+  "output_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\datatype_test\\outputs_md\\md_mirror_comment_test\\2-服务协议\\1-原合同-服务协议\\output.md"
+}

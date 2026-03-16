@@ -1,0 +1,183 @@
+{
+  "run_id": "20260316_100418",
+  "timestamp": "2026-03-16T10:04:30.092272",
+  "sample_id": "1-品牌球馆冠名合作协议/2-第三方平台审查结果/Alpha GPT/审查意见书-品牌球馆冠名合作协议",
+  "source_path": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议\\2-第三方平台审查结果\\Alpha GPT\\审查意见书-品牌球馆冠名合作协议.docx",
+  "file_type": "docx",
+  "device": "cpu",
+  "elapsed_seconds": 0.98,
+  "doc_conversion": null,
+  "docling_error": "",
+  "md_export": {
+    "status": "ok",
+    "error": ""
+  },
+  "comment_anchor_count": 0,
+  "comment_anchors": [],
+  "style_hint_count": 21,
+  "style_hints": [
+    {
+      "paragraph_index": 1,
+      "paragraph_excerpt": "Contract Review Opinion ReportContract Review Opinion Report合同审查意见书合同审查意见书",
+      "style_tags": [
+        "color#EA6F2D"
+      ]
+    },
+    {
+      "paragraph_index": 6,
+      "paragraph_excerpt": "合同审查意见书",
+      "style_tags": [
+        "color#EA6F2D"
+      ]
+    },
+    {
+      "paragraph_index": 7,
+      "paragraph_excerpt": "合同审查意见书",
+      "style_tags": [
+        "color#EA6F2D"
+      ]
+    },
+    {
+      "paragraph_index": 15,
+      "paragraph_excerpt": "日期：2026年01月07日日期：2026年01月07日",
+      "style_tags": [
+        "color#333333"
+      ]
+    },
+    {
+      "paragraph_index": 16,
+      "paragraph_excerpt": "日期：2026年01月07日",
+      "style_tags": [
+        "color#333333"
+      ]
+    },
+    {
+      "paragraph_index": 17,
+      "paragraph_excerpt": "日期：2026年01月07日",
+      "style_tags": [
+        "color#333333"
+      ]
+    },
+    {
+      "paragraph_index": 19,
+      "paragraph_excerpt": "（注：以下内容由AlphaGPT人工智能生成,仅供参考,不构成正式的法律意见和建议,请您注意甄别）",
+      "style_tags": [
+        "color#ED6C00"
+      ]
+    },
+    {
+      "paragraph_index": 163,
+      "paragraph_excerpt": "合作期限：自2026年1月20日起至2028年1月20日止，共计2年。合作期限届满前30日，双乙方可协商需主动向甲方发出书面续约事宜，征询通知；同等条件下甲方享有排他性优先续约权，乙方不得在未征询甲方意见的前提下与第三方洽谈任何同类冠名或品牌合作事宜。建议补充明确“同等条件”的具体标准或认定机制，以避免续约时双方对条件认定产生争议。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 181,
+      "paragraph_excerpt": "合作期内，乙方球馆所有区域（尤其是匹克球场地、产品陈列区、广告展示区）不得出现与甲方同品类（匹克球相关器材、装备）竞品达成任何形式的合作（包括但不限于品牌logo冠名、广告宣传投放、物资投放赞助、联合推广等），且乙方球馆所有区域及线上宣传渠道不得出现甲方同品类竞品的品牌标识、产品、宣传资料、广告信息等任何内容，确保甲方品牌独家曝光权益。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 190,
+      "paragraph_excerpt": "合作期内，甲方可优先使用冠名球馆举办品牌赛事、产品试打、客户沙龙等活动，乙方需在收到甲方活动需求后3个工作日内予以响应并免费提供场地协调、基础配套（如灯光、座椅、清洁）等便利支持，；活动具体事宜双由甲方另行协商主导，乙方不得无故拒绝或设置障碍。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 199,
+      "paragraph_excerpt": "本协议签订后15个工作日内，完成球馆冠名更名、门头标识更换、logo地面喷涂、广告位安装、品牌展架摆放等所有品牌曝光权益的落地工作，并拍摄清晰的现场照片（不少于10张，含整体场景及细节特写）、视频（时长不少于1分钟）提交甲方验收，。甲方应在收到乙方提交的资料后5个工作日内完成验收并反馈结果。若甲方验收不合格后，乙方视为需在甲方发出整改通知之日起7个工作日内完",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 208,
+      "paragraph_excerpt": "合作期内，妥善保管甲方赞助的物资，除正常使用损耗外，因乙方人为原因导致物资损坏、丢失的，需及在24小时内书面通知甲方，并负责维修或按甲方采购原价（甲方提供采购凭证）赔偿；若因乙方保管不善导致物资无法正常使用影响甲方品牌展示的，乙方需同时赔偿甲方相应的品牌损失。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 217,
+      "paragraph_excerpt": "主动向球馆客户介绍、推荐曲点品牌及产品，将曲点品牌及产品的推荐纳入员工日常服务规范，配合甲方的品牌推广需求，不得故意诋毁或误导客户。",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 226,
+      "paragraph_excerpt": "若甲方未按本协议约定时间交付赞助物资，应及时书面通知乙方并说明原因，逾期超过30日且未采取有效补救措施的，乙方有权解除本协议。",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 235,
+      "paragraph_excerpt": "若乙方未按本协议约定完成冠名、logo喷涂、广告位提供等品牌曝光权益落地，或未通过验收且逾期未整改，甲方有权要求乙方在15个工作日内限期整改，整改无效或逾期未整改的，甲方有权解除本协议，并要求乙方赔偿甲方因此造成遭受的全部实际损失（包括但不限于物资成本、品牌及甲方为本项目已实际支出的推广损失等费用）。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 244,
+      "paragraph_excerpt": "若乙方违反无竞品承诺，在球馆内引入甲方同品类竞品品牌信息，甲方有权要求乙方立即拆除相关信息；情节严重的，甲方有权解除本协议，乙方需向甲方支付【建议明确具体金额或计算方式】的违约金，并赔偿甲方全部因此遭受的实际损失（损失赔偿额不得超过乙方订立合同时预见或应当预见的损失范围）。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 253,
+      "paragraph_excerpt": "若乙方擅自变更、删减冠名名称或遮挡、拆除甲方品牌曝光资源，甲方有权要求乙方限期恢复；逾期未恢复的，甲方有权解除本协议，乙方需赔偿甲方因此遭受的实际损失。",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 262,
+      "paragraph_excerpt": "一方严重发生本协议第五条约定的违约情形，或违反本协议其他约定，并经另一方书面催告后【】日内仍未整改纠正，给守约方造成重大损害的，另一方有权解除本协议。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 271,
+      "paragraph_excerpt": "协议解除或终止后，乙方需停止使用“曲点”冠名名称及品牌相关标识，若甲方同意乙方继续使用赞助物资，物资所有权归乙方所有；若甲方要求收回物资，应在协议解除或终止后15个工作日内书面提出，乙方需在收到甲方通知后10个工作日内配合返还（正常使用损耗除外）。",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 280,
+      "paragraph_excerpt": "本协议履行过程中发生的任何争议，双方应首先友好协商解决；协商不成的，任何一方均有权向乙甲方球馆联系地址所在地有管辖权的人民法院提起诉讼。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 289,
+      "paragraph_excerpt": "本协议一式两份，甲乙双方各执一份，自双方法定代表人或授权代表签字并加盖公章或合同专用章之日起生效，具有同等法律效力。",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    }
+  ],
+  "inline_injection": {
+    "comment_matched": 0,
+    "comment_unmatched": 0,
+    "style_matched": 18,
+    "style_unmatched": 3
+  },
+  "output_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\datatype_test\\outputs_md\\20260316_100418\\1-品牌球馆冠名合作协议\\2-第三方平台审查结果\\Alpha GPT\\审查意见书-品牌球馆冠名合作协议\\output.md"
+}

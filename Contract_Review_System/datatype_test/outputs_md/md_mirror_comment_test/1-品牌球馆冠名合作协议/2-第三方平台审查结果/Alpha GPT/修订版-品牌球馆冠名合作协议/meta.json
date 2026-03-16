@@ -1,0 +1,26 @@
+{
+  "run_id": "md_mirror_comment_test",
+  "timestamp": "2026-03-16T09:49:23.683917",
+  "sample_id": "1-品牌球馆冠名合作协议/2-第三方平台审查结果/Alpha GPT/修订版-品牌球馆冠名合作协议",
+  "source_path": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议\\2-第三方平台审查结果\\Alpha GPT\\修订版-品牌球馆冠名合作协议.docx",
+  "file_type": "docx",
+  "device": "cpu",
+  "elapsed_seconds": 0.16,
+  "doc_conversion": null,
+  "docling_error": "",
+  "md_export": {
+    "status": "ok",
+    "error": ""
+  },
+  "comment_anchor_count": 1,
+  "comment_anchors": [
+    {
+      "comment_id": "0",
+      "author": "Mia",
+      "comment_text": "以下修订内容由AlphaGPT人工智能生成，仅供参考，不构成正式的法律意见和建议，请您注意甄别",
+      "paragraph_index": 1,
+      "paragraph_excerpt": "牌球馆冠名合作协议"
+    }
+  ],
+  "output_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\datatype_test\\outputs_md\\md_mirror_comment_test\\1-品牌球馆冠名合作协议\\2-第三方平台审查结果\\Alpha GPT\\修订版-品牌球馆冠名合作协议\\output.md"
+}

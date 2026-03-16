@@ -1,0 +1,25 @@
+{
+  "run_id": "inline1",
+  "generated_at": "2026-03-16T10:01:22.680900",
+  "total": 1,
+  "ok": 1,
+  "failed": 0,
+  "results": [
+    {
+      "sample_id": "修订批注版-品牌球馆冠名合作协议",
+      "source": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议\\2-第三方平台审查结果\\Alpha GPT\\修订批注版-品牌球馆冠名合作协议.docx",
+      "output_subdir": "修订批注版-品牌球馆冠名合作协议",
+      "status": "ok",
+      "output_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\datatype_test\\outputs_md\\inline1\\修订批注版-品牌球馆冠名合作协议\\output.md",
+      "comment_anchor_count": 26,
+      "style_hint_count": 1,
+      "inline_injection": {
+        "comment_matched": 19,
+        "comment_unmatched": 7,
+        "style_matched": 1,
+        "style_unmatched": 0
+      },
+      "elapsed_seconds": 10.15
+    }
+  ]
+}

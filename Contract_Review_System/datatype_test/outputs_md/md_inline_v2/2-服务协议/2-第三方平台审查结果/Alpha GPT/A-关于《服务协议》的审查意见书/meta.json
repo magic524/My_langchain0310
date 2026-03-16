@@ -1,0 +1,149 @@
+{
+  "run_id": "md_inline_v2",
+  "timestamp": "2026-03-16T10:20:56.918572",
+  "sample_id": "2-服务协议/2-第三方平台审查结果/Alpha GPT/A-关于《服务协议》的审查意见书",
+  "source_path": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\2-服务协议\\2-第三方平台审查结果\\Alpha GPT\\A-关于《服务协议》的审查意见书.docx",
+  "file_type": "docx",
+  "device": "cpu",
+  "elapsed_seconds": 0.36,
+  "doc_conversion": null,
+  "docling_error": "RuntimeError: Pipeline SimplePipeline failed\nTraceback (most recent call last):\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\pipeline\\base_pipeline.py\", line 74, in execute\n    conv_res = self._build_document(conv_res)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\pipeline\\simple_pipeline.py\", line 40, in _build_document\n    conv_res.document = conv_res.input._backend.convert()\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\backend\\msword_backend.py\", line 169, in convert\n    doc, _ = self._walk_linear(self.docx_obj.element.body, doc)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\backend\\msword_backend.py\", line 363, in _walk_linear\n    te = self._handle_text_elements(element, doc)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\backend\\msword_backend.py\", line 953, in _handle_text_elements\n    text, equations = self._handle_equations_in_text(\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\backend\\msword_backend.py\", line 887, in _handle_equations_in_text\n    tag_name = etree.QName(subt).localname\n               ^^^^^^^^^^^^^^^^^\n  File \"src/lxml/etree.pyx\", line 1954, in lxml.etree.QName.__init__\nValueError: Invalid input tag of type <class '_cython_3_1_4.cython_function_or_method'>\n\nThe above exception was the direct cause of the following exception:\n\nTraceback (most recent call last):\n  File \"E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\datatype_test\\convert_md.py\", line 343, in run_docling\n    result = converter.convert(str(input_path))\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\pydantic\\_internal\\_validate_call.py\", line 39, in wrapper_function\n    return wrapper(*args, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\pydantic\\_internal\\_validate_call.py\", line 136, in __call__\n    res = self.__pydantic_validator__.validate_python(pydantic_core.ArgsKwargs(args, kwargs))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\document_converter.py\", line 388, in convert\n    return next(all_res)\n           ^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\document_converter.py\", line 447, in convert_all\n    for conv_res in conv_res_iter:\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\document_converter.py\", line 564, in _convert\n    for item in map(\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\document_converter.py\", line 611, in _process_document\n    conv_res = self._execute_pipeline(in_doc, raises_on_error=raises_on_error)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\document_converter.py\", line 634, in _execute_pipeline\n    conv_res = pipeline.execute(in_doc, raises_on_error=raises_on_error)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"E:\\conda_envs\\langchain\\Lib\\site-packages\\docling\\pipeline\\base_pipeline.py\", line 89, in execute\n    raise RuntimeError(f\"Pipeline {self.__class__.__name__} failed\") from e\nRuntimeError: Pipeline SimplePipeline failed\n",
+  "md_export": {
+    "status": "error",
+    "error": ""
+  },
+  "comment_anchor_count": 0,
+  "comment_anchors": [],
+  "style_hint_count": 17,
+  "style_hints": [
+    {
+      "paragraph_index": 1,
+      "paragraph_excerpt": "Contract Review Opinion ReportContract Review Opinion Report合同审查意见书合同审查意见书",
+      "style_tags": [
+        "color#EA6F2D"
+      ]
+    },
+    {
+      "paragraph_index": 6,
+      "paragraph_excerpt": "合同审查意见书",
+      "style_tags": [
+        "color#EA6F2D"
+      ]
+    },
+    {
+      "paragraph_index": 7,
+      "paragraph_excerpt": "合同审查意见书",
+      "style_tags": [
+        "color#EA6F2D"
+      ]
+    },
+    {
+      "paragraph_index": 15,
+      "paragraph_excerpt": "日期：2026年01月09日日期：",
+      "style_tags": [
+        "color#333333"
+      ]
+    },
+    {
+      "paragraph_index": 16,
+      "paragraph_excerpt": "日期：2026年01月09日",
+      "style_tags": [
+        "color#333333"
+      ]
+    },
+    {
+      "paragraph_index": 17,
+      "paragraph_excerpt": "日期：",
+      "style_tags": [
+        "color#333333"
+      ]
+    },
+    {
+      "paragraph_index": 19,
+      "paragraph_excerpt": "（注：以下内容由AlphaGPT人工智能生成,仅供参考,不构成正式的法律意见和建议,请您注意甄别）",
+      "style_tags": [
+        "color#ED6C00"
+      ]
+    },
+    {
+      "paragraph_index": 145,
+      "paragraph_excerpt": "服务完成时间：至2026年03月31日前",
+      "style_tags": [
+        "color#999999"
+      ]
+    },
+    {
+      "paragraph_index": 163,
+      "paragraph_excerpt": "甲方有权要求乙方按照本协议约定提供售后服务，对乙方的服务质量进行监督、提出意见和建议；在服务过程中，有权了解升级过程、进度等相关信息。对若乙方在服务过程中接触到质量不符合约定，甲方有权要求乙方在【】个工作日内进行整改，整改后仍未达标的，甲方商业秘密、技术信息等承担保密义务有权启动违约责任追究程序。",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 172,
+      "paragraph_excerpt": "乙方负责其派出服务人员在坦桑尼亚的签证办理、当地法律法规遵守及人员安全保障，为服务人员购买境外人身意外伤害保险；因乙方人员自身原因或违规操作导致的人身损害、财产损失或当地法律纠纷，全部责任由乙方自行承担，与甲方无关。",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 181,
+      "paragraph_excerpt": "乙方在服务过程中，有权要求甲方提供必要的配合和相关资料；配备专业的技术人员，为甲方提供专业、高效、优质的服务；严格遵守服务规范和操作流程，保证服务质量；在服务过程中，不得损坏甲方的其他财产，如因乙方原因造成甲方财产损失的，应承担赔偿责任；对服务过程中接触到的甲方商业秘密、技术信息等承担保密义务，不得向任何第三方泄露。升级完成后，乙方需确保每台播放器软件运行稳",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 190,
+      "paragraph_excerpt": "本协议约定的服务范围，第一笔款项：乙方完成不少于总服务量【】%的软件升级工作并经甲方确认验收后，于2026年1月20日前，乙方提供______元对应金额的服务费用发票，甲方收到发票后5个工作日内向乙方支付【】元；第二笔款项：乙方完成不少于总服务量【】%的软件升级工作并经甲方确认验收后，于2026年2月5日前，乙方提供______元对应金额的服务费用发票，甲方",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 208,
+      "paragraph_excerpt": "若乙方未按照本协议约定的服务范围、时间提供服务，或服务质量不符合约定，给甲方造成损失的，乙方应承担相应的赔偿责任；若乙方逾期完成服务，每逾期一日，应按照服务总费用的【】%向甲方支付违约金；逾期超过【】天的，甲方有权单方解除本协议，并要求乙方退还已支付的全部服务费用，同时赔偿甲方因此遭受的全部损失；情节严重的，甲方有权解除本协议，并要求乙方退还已支付的服务费用",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 217,
+      "paragraph_excerpt": "因不可抗力、政策重大变化或甲方提供的设备存在固有缺陷导致无法升级等非因任何一方过错原因，导致本协议部分或全部无法履行的，遭受该等情形的一方应尽快通知对方，并提供相应证明，双方可协商延期履行、部分履行或解除本协议，遭受方据此可免除相应违约责任。",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 226,
+      "paragraph_excerpt": "任何一方违反本协议约定的保密义务，泄露对方商业秘密或技术信息，给对方造成损失的，应承担全部赔偿责任因此给对方造成的直接经济损失；",
+      "style_tags": [
+        "color#999999",
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 235,
+      "paragraph_excerpt": "本协议因任何原因被解除或终止的，乙方应在五日内退还甲方所有与履行本协议相关的技术资料、商业秘密载体，并出具已完成退还的书面证明。甲方有权委派人员在场监督上述退还过程。",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    },
+    {
+      "paragraph_index": 244,
+      "paragraph_excerpt": "本协议未尽事宜，双方可另行签订补充协议，补充协议应采用书面形式并经双方签字或盖章后生效，方为有效。补充协议与本协议内容冲突的，以补充协议为准；",
+      "style_tags": [
+        "color#FF0000"
+      ]
+    }
+  ],
+  "inline_injection": {
+    "comment_matched": 0,
+    "comment_unmatched": 0,
+    "style_matched": 0,
+    "style_unmatched": 0
+  },
+  "output_md": ""
+}

@@ -243,3 +243,37 @@
 - **输出位置**：
   - `outputs_md/inline1/修订批注版-品牌球馆冠名合作协议/output.md`
   - `outputs_md/inline1/修订批注版-品牌球馆冠名合作协议/meta.json`
+
+---
+
+### [已完成] Run 009 — 行内批注追加 + 标题/换行修复
+
+- **Run ID**：`md_inline_v2`
+- **日期**：2026-03-16
+- **目标**：
+  - 批注从“段落下方独立块”改为“命中原文行尾直接追加（批注...）”。
+  - 修复 Markdown 预览中的标题识别与章节换行问题，尽量贴近原 doc/docx 框架。
+- **脚本改动**：
+  - `inject_inline_annotations()` 改为行尾注入：`（批注#...）` / `（样式/...）`。
+  - 表格行采用单独下一行注记，避免破坏 Markdown 表格语法。
+  - `postprocess_legal_markdown()` 新增结构修复：
+    - 文首协议名自动识别为一级标题（`# ...`）；
+    - 章节标题与子标题前后空行规范化；
+    - `<!-- image -->` 占位规范化与空行修复；
+    - 异常缩进清理。
+- **命令**：
+  ```powershell
+  conda activate langchain
+  cd E:\Magic_wu_python\Contract_Review_System\My_langchain0310\Contract_Review_System\datatype_test
+  python convert_md.py --input-dir data/合同数据-2026.3.12 --recursive --run-id md_inline_v2 --device cpu
+  ```
+- **结果摘要**：
+  - 总计：19
+  - 成功：17
+  - 失败：2（Docling pipeline 错误，延续既有问题）
+- **验证样例**：
+  - `outputs_md/md_inline_v2/1-品牌球馆冠名合作协议/3-最终审查意见：品牌球馆冠名合作协议/output.md`
+  - 关键验证点：
+    - `# 翘曲点品牌球馆冠名合作协议` 已识别为标题；
+    - `四、双方责任与义务` 段落前后换行恢复正常；
+    - 批注已在原文命中行尾追加，如第 4、73、74 段条款后直接带 `（批注...）`。

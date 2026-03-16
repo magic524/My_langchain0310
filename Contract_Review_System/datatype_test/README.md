@@ -165,9 +165,10 @@ outputs_md/{run_id}/run_summary.json
 
 批注与样式输出说明：
 
-- `output.md` 中在对应段落下方追加：
-    - `> [批注锚点#comment_id | 段落:n | 作者:xxx] 批注内容`
-    - `> [样式提示 | 段落:n] color#RRGGBB, highlight:yellow, underline ...`
+- `output.md` 中默认采用“行内追加”模式，在命中原文行尾直接附加：
+    - `（批注#comment_id/段落n/作者xxx: 批注内容）`
+    - `（样式/段落n: color#RRGGBB, highlight:yellow, underline ...）`
+- 若命中行是 Markdown 表格行，为避免破坏表格结构，会在表格行后单独追加一行括号注记。
 - `meta.json` 新增字段：
     - `comment_anchor_count`
     - `comment_anchors`（包含 `comment_id`、`author`、`comment_text`、`paragraph_index`、`paragraph_excerpt`）

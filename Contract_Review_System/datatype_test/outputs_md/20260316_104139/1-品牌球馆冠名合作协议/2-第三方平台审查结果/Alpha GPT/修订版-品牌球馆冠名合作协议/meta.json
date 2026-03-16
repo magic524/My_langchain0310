@@ -1,0 +1,42 @@
+{
+  "run_id": "20260316_104139",
+  "timestamp": "2026-03-16T10:41:50.727203",
+  "sample_id": "1-品牌球馆冠名合作协议/2-第三方平台审查结果/Alpha GPT/修订版-品牌球馆冠名合作协议",
+  "source_path": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议\\2-第三方平台审查结果\\Alpha GPT\\修订版-品牌球馆冠名合作协议.docx",
+  "file_type": "docx",
+  "device": "cpu",
+  "elapsed_seconds": 0.2,
+  "doc_conversion": null,
+  "docling_error": "",
+  "md_export": {
+    "status": "ok",
+    "error": ""
+  },
+  "comment_anchor_count": 1,
+  "comment_anchors": [
+    {
+      "comment_id": "0",
+      "author": "Mia",
+      "comment_text": "以下修订内容由AlphaGPT人工智能生成，仅供参考，不构成正式的法律意见和建议，请您注意甄别",
+      "paragraph_index": 1,
+      "paragraph_excerpt": "牌球馆冠名合作协议"
+    }
+  ],
+  "style_hint_count": 1,
+  "style_hints": [
+    {
+      "paragraph_index": 2,
+      "paragraph_excerpt": "甲方（赞助方）：某（深圳）科技有限公司 （品牌运营方，以下简称“甲方”）",
+      "style_tags": [
+        "underline"
+      ]
+    }
+  ],
+  "inline_injection": {
+    "comment_matched": 1,
+    "comment_unmatched": 0,
+    "style_matched": 1,
+    "style_unmatched": 0
+  },
+  "output_md": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\datatype_test\\outputs_md\\20260316_104139\\1-品牌球馆冠名合作协议\\2-第三方平台审查结果\\Alpha GPT\\修订版-品牌球馆冠名合作协议\\output.md"
+}

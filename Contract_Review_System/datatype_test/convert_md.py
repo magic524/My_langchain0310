@@ -178,7 +178,80 @@ def postprocess_legal_markdown(md_text: str) -> str:
 
         pass2.append(line)
 
-    output = "\n".join(pass2)
+    # Pass 3: 结构与换行修复（标题识别、图片占位、异常缩进、段落空行）
+    pass3: list[str] = []
+    first_major_heading_found = False
+    major_heading_re = re.compile(r"^\*\*[一二三四五六七八九十]+、[^*]+\*\*$")
+    sub_heading_re = re.compile(r"^\*\*（[一二三四五六七八九十]+）[^*]*\*\*$")
+
+    for idx, raw_line in enumerate(pass2):
+        line = raw_line.rstrip()
+
+        # 清理异常缩进（保留列表缩进与表格）
+        if line.startswith("    ") and not line.lstrip().startswith(("- ", "* ", "1.", "2.", "3.", "4.", "5.", "|")):
+            line = line.lstrip()
+
+        # 规范图片占位写法与缩进
+        if "<!-- image -->" in line:
+            line = "<!-- image -->"
+
+        stripped = line.strip()
+        if not stripped:
+            pass3.append("")
+            continue
+
+        # 识别文档主标题（仅在正文前段出现一次）
+        if not first_major_heading_found and idx <= 20:
+            if (
+                stripped.startswith("**")
+                and stripped.endswith("**")
+                and "协议" in stripped
+                and len(stripped) <= 60
+            ):
+                title_text = stripped[2:-2].strip()
+                if title_text:
+                    line = f"# {title_text}"
+                    stripped = line
+            elif (
+                "协议" in stripped
+                and len(stripped) <= 50
+                and not stripped.startswith("#")
+                and "：" not in stripped
+            ):
+                line = f"# {stripped}"
+                stripped = line
+            if stripped.startswith("# ") or major_heading_re.match(stripped):
+                first_major_heading_found = True
+
+        if major_heading_re.match(stripped) or sub_heading_re.match(stripped) or stripped.startswith("# "):
+            if pass3 and pass3[-1] != "":
+                pass3.append("")
+            pass3.append(stripped)
+            pass3.append("")
+            continue
+
+        if stripped == "<!-- image -->":
+            if pass3 and pass3[-1] != "":
+                pass3.append("")
+            pass3.append(stripped)
+            pass3.append("")
+            continue
+
+        pass3.append(line)
+
+    # 清理多余空行（最多保留 1 个空行）
+    compact: list[str] = []
+    blank_run = 0
+    for line in pass3:
+        if line.strip() == "":
+            blank_run += 1
+            if blank_run <= 1:
+                compact.append("")
+            continue
+        blank_run = 0
+        compact.append(line)
+
+    output = "\n".join(compact)
     if md_text.endswith("\n"):
         output += "\n"
     return output
@@ -550,7 +623,7 @@ def _find_line_index_for_excerpt(lines: list[str], excerpt: str, start_idx: int 
 
 
 def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_hints: list[dict]) -> tuple[str, dict]:
-    """将批注和样式提示就地注入到 Markdown 对应位置。"""
+    """将批注和样式提示直接追加到命中原文行尾。"""
     lines = md_text.splitlines()
     if not lines:
         return md_text, {
@@ -560,7 +633,8 @@ def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_h
             "style_unmatched": len(style_hints),
         }
 
-    insertions: dict[int, list[str]] = {}
+    line_comment_payloads: dict[int, list[str]] = {}
+    line_style_payloads: dict[int, list[str]] = {}
     comment_matched = 0
     style_matched = 0
 
@@ -573,8 +647,8 @@ def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_h
         author = item.get("author", "未知作者")
         para_idx = item.get("paragraph_index", "?")
         comment_text = (item.get("comment_text", "") or "（批注文本为空）").strip()
-        marker = f"> [批注锚点#{comment_id} | 段落:{para_idx} | 作者:{author}] {comment_text}"
-        insertions.setdefault(idx, []).append(marker)
+        marker = f"批注#{comment_id}/段落{para_idx}/作者{author}: {comment_text}"
+        line_comment_payloads.setdefault(idx, []).append(marker)
         comment_matched += 1
         cursor = idx
 
@@ -587,12 +661,12 @@ def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_h
         if not tags:
             continue
         para_idx = item.get("paragraph_index", "?")
-        marker = f"> [样式提示 | 段落:{para_idx}] {', '.join(tags)}"
-        insertions.setdefault(idx, []).append(marker)
+        marker = f"样式/段落{para_idx}: {', '.join(tags)}"
+        line_style_payloads.setdefault(idx, []).append(marker)
         style_matched += 1
         cursor = idx
 
-    if not insertions:
+    if not line_comment_payloads and not line_style_payloads:
         return md_text, {
             "comment_matched": 0,
             "comment_unmatched": len(comment_anchors),
@@ -602,10 +676,26 @@ def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_h
 
     new_lines: list[str] = []
     for idx, line in enumerate(lines):
-        new_lines.append(line)
-        if idx in insertions:
-            for marker in insertions[idx]:
-                new_lines.append(marker)
+        stripped = line.strip()
+        updated_line = line
+
+        payloads: list[str] = []
+        if idx in line_comment_payloads:
+            payloads.extend(line_comment_payloads[idx])
+        if idx in line_style_payloads:
+            payloads.extend(line_style_payloads[idx])
+
+        if payloads:
+            joined = "；".join(payloads)
+            # 避免破坏 Markdown 表格结构，表格行用下一行追加。
+            if stripped.startswith("|") and stripped.endswith("|"):
+                new_lines.append(updated_line)
+                new_lines.append(f"【{joined}】")
+                continue
+            if stripped and not stripped.startswith("<!--"):
+                updated_line = f"{updated_line}【{joined}】"
+
+        new_lines.append(updated_line)
 
     merged = "\n".join(new_lines)
     if md_text.endswith("\n"):

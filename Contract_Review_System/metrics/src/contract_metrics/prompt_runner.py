@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,9 @@ class PromptRuntimeConfig:
     base_url: str
     temperature: float
     extra_body: dict[str, Any] | None
+    timeout_seconds: float
+    max_retries: int
+    retry_backoff_seconds: float
 
 
 def _parse_json_env(env_name: str) -> dict[str, Any] | None:
@@ -51,6 +55,26 @@ def _load_env_files() -> None:
         load_dotenv(fallback_env, override=False)
 
 
+def _parse_float_env(env_name: str, default: float) -> float:
+    raw_value = os.getenv(env_name)
+    if raw_value is None:
+        return default
+    try:
+        return float(raw_value)
+    except ValueError:
+        return default
+
+
+def _parse_int_env(env_name: str, default: int) -> int:
+    raw_value = os.getenv(env_name)
+    if raw_value is None:
+        return default
+    try:
+        return int(raw_value)
+    except ValueError:
+        return default
+
+
 def load_prompt_runtime_config() -> PromptRuntimeConfig:
     """Load prompt runtime config from `.env` and environment variables."""
     _load_env_files()
@@ -65,6 +89,9 @@ def load_prompt_runtime_config() -> PromptRuntimeConfig:
     api_key = os.getenv("OPENAI_API_KEY") or "EMPTY"
     temp_raw = os.getenv("OPENAI_TEMPERATURE", "0.0")
     extra_body = _parse_json_env("OPENAI_EXTRA_BODY")
+    timeout_seconds = max(_parse_float_env("OPENAI_TIMEOUT_SECONDS", 120.0), 1.0)
+    max_retries = max(_parse_int_env("OPENAI_MAX_RETRIES", 2), 0)
+    retry_backoff_seconds = max(_parse_float_env("OPENAI_RETRY_BACKOFF_SECONDS", 2.0), 0.0)
 
     if not base_url:
         msg = "OPENAI_API_BASE / OPENAI_BASE_URL is required for prompt-only generation"
@@ -81,6 +108,9 @@ def load_prompt_runtime_config() -> PromptRuntimeConfig:
         base_url=base_url,
         temperature=temperature,
         extra_body=extra_body,
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+        retry_backoff_seconds=retry_backoff_seconds,
     )
 
 
@@ -99,6 +129,9 @@ def runtime_config_snapshot(runtime: PromptRuntimeConfig) -> dict[str, Any]:
         "temperature": runtime.temperature,
         "extra_body": runtime.extra_body or {},
         "api_key_masked": api_key_masked or "(empty or EMPTY)",
+        "timeout_seconds": runtime.timeout_seconds,
+        "max_retries": runtime.max_retries,
+        "retry_backoff_seconds": runtime.retry_backoff_seconds,
     }
 
 
@@ -119,16 +152,34 @@ def _send_chat(runtime: PromptRuntimeConfig, *, system_prompt: str, user_prompt:
     if runtime.extra_body:
         payload.update(runtime.extra_body)
 
-    response = requests.post(url, headers=headers, json=payload, timeout=120)
-    response.raise_for_status()
-    body = response.json()
-    choices = body.get("choices") or []
-    if not choices:
-        return "{}"
-    message = choices[0].get("message") or {}
-    content = message.get("content")
-    if isinstance(content, str):
-        return content
+    last_error: Exception | None = None
+    for attempt in range(runtime.max_retries + 1):
+        try:
+            response = requests.post(
+                url,
+                headers=headers,
+                json=payload,
+                timeout=runtime.timeout_seconds,
+            )
+            response.raise_for_status()
+            body = response.json()
+            choices = body.get("choices") or []
+            if not choices:
+                return "{}"
+            message = choices[0].get("message") or {}
+            content = message.get("content")
+            if isinstance(content, str):
+                return content
+            return "{}"
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as exc:
+            last_error = exc
+            if attempt >= runtime.max_retries:
+                raise
+            if runtime.retry_backoff_seconds > 0:
+                time.sleep(runtime.retry_backoff_seconds)
+
+    if last_error is not None:
+        raise last_error
     return "{}"
 
 

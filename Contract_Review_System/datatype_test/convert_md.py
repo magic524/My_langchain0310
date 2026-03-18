@@ -21,8 +21,10 @@ Markdown-only 合同转换脚本
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -38,6 +40,22 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent.parent
 DEFAULT_OUTPUTS_DIR = SCRIPT_DIR / "outputs_md"
 WORD_NS = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+DOCX_NS = {
+    **WORD_NS,
+    "mc": "http://schemas.openxmlformats.org/markup-compatibility/2006",
+}
+for _prefix, _uri in {
+    "w": WORD_NS["w"],
+    "mc": DOCX_NS["mc"],
+    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    "v": "urn:schemas-microsoft-com:vml",
+    "o": "urn:schemas-microsoft-com:office:office",
+    "wp": "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing",
+    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
+    "pic": "http://schemas.openxmlformats.org/drawingml/2006/picture",
+    "wps": "http://schemas.microsoft.com/office/word/2010/wordprocessingShape",
+}.items():
+    ET.register_namespace(_prefix, _uri)
 
 
 def _import_docling():
@@ -312,9 +330,88 @@ def _try_win32com(doc_path: Path, out_dir: Path) -> Path | None:
     return None
 
 
-def convert_doc_to_docx(doc_path: Path, work_dir: Path) -> tuple[Path | None, str]:
+def detect_word_file_format(path: Path) -> str:
+    """Sniff the real Word container instead of trusting the suffix."""
+
+    try:
+        header = path.read_bytes()[:8]
+    except OSError:
+        return "unknown"
+
+    if header.startswith(b"PK\x03\x04"):
+        try:
+            with zipfile.ZipFile(path) as archive:
+                names = set(archive.namelist())
+                if "[Content_Types].xml" in names and "word/document.xml" in names:
+                    return "docx_package"
+        except zipfile.BadZipFile:
+            return "unknown"
+
+    if header.startswith(b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"):
+        return "ole_doc"
+    return "unknown"
+
+
+def reuse_mislabeled_docx_package(doc_path: Path, work_dir: Path) -> Path | None:
+    """Copy a DOCX package that was stored with a `.doc` suffix."""
+
+    if detect_word_file_format(doc_path) != "docx_package":
+        return None
+
+    work_dir.mkdir(parents=True, exist_ok=True)
+    target = work_dir / f"{doc_path.stem}.docx"
+    shutil.copy2(doc_path, target)
+    return target
+
+
+def reuse_previous_converted_docx(
+    doc_path: Path,
+    work_dir: Path,
+    output_root: Path,
+    output_subdir: Path,
+    *,
+    current_run_id: str | None = None,
+) -> tuple[Path | None, str]:
+    """Reuse a prior successful DOCX conversion from an earlier run."""
+
+    if not output_root.exists():
+        return None, ""
+
+    candidate_paths: list[Path] = []
+    for run_dir in sorted(output_root.iterdir(), reverse=True):
+        if not run_dir.is_dir():
+            continue
+        if current_run_id and run_dir.name == current_run_id:
+            continue
+        candidate = run_dir / output_subdir / "_converted" / f"{doc_path.stem}.docx"
+        if candidate.exists() and detect_word_file_format(candidate) == "docx_package":
+            candidate_paths.append(candidate)
+
+    if not candidate_paths:
+        return None, ""
+
+    work_dir.mkdir(parents=True, exist_ok=True)
+    source = candidate_paths[0]
+    target = work_dir / f"{doc_path.stem}.docx"
+    shutil.copy2(source, target)
+    run_name = source.relative_to(output_root).parts[0]
+    return target, f"previous_run_cache:{run_name}"
+
+
+def convert_doc_to_docx(
+    doc_path: Path,
+    work_dir: Path,
+    *,
+    output_root: Path | None = None,
+    output_subdir: Path | None = None,
+    current_run_id: str | None = None,
+) -> tuple[Path | None, str]:
     """转换 .doc -> .docx，按优先级 LibreOffice -> Word COM。"""
     work_dir.mkdir(parents=True, exist_ok=True)
+
+    disguised_docx_path = reuse_mislabeled_docx_package(doc_path, work_dir)
+    if disguised_docx_path:
+        return disguised_docx_path, "renamed_docx_package"
 
     docx_path = _try_libreoffice(doc_path, work_dir)
     if docx_path:
@@ -324,11 +421,96 @@ def convert_doc_to_docx(doc_path: Path, work_dir: Path) -> tuple[Path | None, st
     if docx_path:
         return docx_path, "win32com"
 
+    if output_root is not None and output_subdir is not None:
+        cached_docx_path, cache_method = reuse_previous_converted_docx(
+            doc_path,
+            work_dir,
+            output_root,
+            output_subdir,
+            current_run_id=current_run_id,
+        )
+        if cached_docx_path:
+            return cached_docx_path, cache_method
+
     return None, (
         "all_methods_failed: "
         "LibreOffice (soffice not found or error) "
-        "and Word COM (pywin32/comtypes unavailable or Microsoft Word not installed) both unavailable"
+        "and Word COM (pywin32/comtypes unavailable or Microsoft Word not installed) both unavailable; "
+        "no previous converted docx cache found"
     )
+
+
+def _flatten_alternate_content(root: ET.Element) -> int:
+    """Remove `mc:AlternateContent` wrappers while keeping one concrete branch."""
+
+    mc_ns = DOCX_NS["mc"]
+    parent_map = {child: parent for parent in root.iter() for child in parent}
+    replaced = 0
+
+    for node in list(root.findall(f".//{{{mc_ns}}}AlternateContent")):
+        parent = parent_map.get(node)
+        if parent is None:
+            continue
+
+        replacement_children: list[ET.Element] = []
+        for branch_name in ("Fallback", "Choice"):
+            branch = node.find(f"{{{mc_ns}}}{branch_name}")
+            if branch is not None and list(branch):
+                replacement_children = [copy.deepcopy(child) for child in list(branch)]
+                break
+
+        insert_at = list(parent).index(node)
+        parent.remove(node)
+        for offset, child in enumerate(replacement_children):
+            parent.insert(insert_at + offset, child)
+        replaced += 1
+
+    return replaced
+
+
+def prepare_docx_for_docling(docx_path: Path, work_dir: Path) -> tuple[Path, dict | None]:
+    """Create a sanitized DOCX copy when markup known to break Docling is present."""
+
+    if not docx_path.exists():
+        return docx_path, None
+
+    try:
+        with zipfile.ZipFile(docx_path) as archive:
+            if "word/document.xml" not in archive.namelist():
+                return docx_path, None
+
+            document_root = ET.fromstring(archive.read("word/document.xml"))
+            alt_count = len(document_root.findall(".//mc:AlternateContent", DOCX_NS))
+            if alt_count == 0:
+                return docx_path, None
+
+            replaced = _flatten_alternate_content(document_root)
+            if replaced == 0:
+                return docx_path, None
+
+            work_dir.mkdir(parents=True, exist_ok=True)
+            sanitized_path = work_dir / f"{docx_path.stem}.docling.docx"
+            document_xml = ET.tostring(document_root, encoding="utf-8", xml_declaration=True)
+
+            with zipfile.ZipFile(sanitized_path, "w") as sanitized_zip:
+                for info in archive.infolist():
+                    payload = document_xml if info.filename == "word/document.xml" else archive.read(info.filename)
+                    sanitized_zip.writestr(info, payload)
+
+        preprocess_info = {
+            "applied": True,
+            "reason": "flatten_alternate_content",
+            "alternate_content_count": alt_count,
+            "output_path": str(sanitized_path),
+        }
+        return sanitized_path, preprocess_info
+    except Exception as exc:
+        preprocess_info = {
+            "applied": False,
+            "reason": "flatten_alternate_content_failed",
+            "error": str(exc),
+        }
+        return docx_path, preprocess_info
 
 
 def run_docling(input_path: Path, device: str = "cpu") -> tuple[object | None, str]:
@@ -438,6 +620,117 @@ def _paragraph_text(paragraph: ET.Element) -> str:
     return _normalize_whitespace("".join(parts))
 
 
+def extract_docx_visible_paragraphs(docx_path: Path) -> list[str]:
+    """Extract visible paragraph texts from `document.xml` in reading order."""
+
+    if not docx_path.exists():
+        return []
+
+    try:
+        with zipfile.ZipFile(docx_path) as archive:
+            document_root = ET.fromstring(archive.read("word/document.xml"))
+    except Exception:
+        return []
+
+    paragraphs: list[str] = []
+    for paragraph in document_root.findall(".//w:p", WORD_NS):
+        paragraph_text = _paragraph_text(paragraph)
+        if paragraph_text:
+            paragraphs.append(paragraph_text)
+    return paragraphs
+
+
+def _find_ancestor(
+    element: ET.Element,
+    parent_map: dict[ET.Element, ET.Element],
+    local_name: str,
+) -> ET.Element | None:
+    """Walk upward until an ancestor with the requested local tag name is found."""
+
+    current = parent_map.get(element)
+    while current is not None:
+        tag = current.tag.rsplit("}", 1)[-1]
+        if tag == local_name:
+            return current
+        current = parent_map.get(current)
+    return None
+
+
+def _dedupe_nonempty_texts(values: list[str]) -> list[str]:
+    """Keep unique, non-empty texts in their original order."""
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        normalized = _normalize_whitespace(value)
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(normalized)
+    return deduped
+
+
+def _build_match_candidates(
+    paragraph: ET.Element,
+    paragraph_text: str,
+    paragraph_index: int,
+    paragraphs: list[ET.Element],
+    parent_map: dict[ET.Element, ET.Element],
+) -> list[str]:
+    """Create richer matching candidates for comments/styles, especially inside tables."""
+
+    candidates: list[str] = [paragraph_text]
+
+    prev_text = ""
+    for prev_idx in range(paragraph_index - 2, -1, -1):
+        prev_text = _paragraph_text(paragraphs[prev_idx])
+        if prev_text:
+            break
+
+    next_text = ""
+    for next_idx in range(paragraph_index, len(paragraphs)):
+        next_text = _paragraph_text(paragraphs[next_idx])
+        if next_text:
+            break
+
+    if prev_text:
+        candidates.append(prev_text)
+        candidates.append(f"{prev_text} {paragraph_text}")
+    if next_text:
+        candidates.append(next_text)
+        candidates.append(f"{paragraph_text} {next_text}")
+    if prev_text and next_text:
+        candidates.append(f"{prev_text} {paragraph_text} {next_text}")
+
+    cell = _find_ancestor(paragraph, parent_map, "tc")
+    if cell is not None:
+        cell_text = " ".join(
+            _dedupe_nonempty_texts([_paragraph_text(p) for p in cell.findall(".//w:p", WORD_NS)])
+        )
+        if cell_text:
+            candidates.append(cell_text)
+            if prev_text:
+                candidates.append(f"{prev_text} {cell_text}")
+            if next_text:
+                candidates.append(f"{cell_text} {next_text}")
+
+    row = _find_ancestor(paragraph, parent_map, "tr")
+    if row is not None:
+        row_texts: list[str] = []
+        for cell in row.findall("./w:tc", WORD_NS):
+            row_texts.extend(_dedupe_nonempty_texts([_paragraph_text(p) for p in cell.findall(".//w:p", WORD_NS)]))
+        row_text = " ".join(_dedupe_nonempty_texts(row_texts))
+        if row_text:
+            candidates.append(row_text)
+            if prev_text:
+                candidates.append(f"{prev_text} {row_text}")
+            if next_text:
+                candidates.append(f"{row_text} {next_text}")
+
+    deduped = _dedupe_nonempty_texts(candidates)
+    return sorted(deduped, key=len, reverse=True)
+
+
 def extract_docx_comments_with_anchors(docx_path: Path) -> list[dict]:
     """抽取 docx 批注及其段落锚点，便于模型关联原文位置。"""
     if not docx_path.exists():
@@ -472,6 +765,7 @@ def extract_docx_comments_with_anchors(docx_path: Path) -> list[dict]:
 
             document_root = ET.fromstring(archive.read("word/document.xml"))
             paragraphs = document_root.findall(".//w:p", WORD_NS)
+            parent_map = {child: parent for parent in document_root.iter() for child in parent}
 
             for idx, paragraph in enumerate(paragraphs, start=1):
                 paragraph_text = _paragraph_text(paragraph)
@@ -504,6 +798,13 @@ def extract_docx_comments_with_anchors(docx_path: Path) -> list[dict]:
                             "comment_text": comment_payload["comment_text"],
                             "paragraph_index": idx,
                             "paragraph_excerpt": paragraph_text[:180],
+                            "match_candidates": _build_match_candidates(
+                                paragraph,
+                                paragraph_text,
+                                idx,
+                                paragraphs,
+                                parent_map,
+                            ),
                         }
                     )
     except Exception:
@@ -531,6 +832,7 @@ def extract_docx_style_hints(docx_path: Path) -> list[dict]:
         with zipfile.ZipFile(docx_path) as archive:
             document_root = ET.fromstring(archive.read("word/document.xml"))
             paragraphs = document_root.findall(".//w:p", WORD_NS)
+            parent_map = {child: parent for parent in document_root.iter() for child in parent}
 
             for idx, paragraph in enumerate(paragraphs, start=1):
                 paragraph_text = _paragraph_text(paragraph)
@@ -575,6 +877,13 @@ def extract_docx_style_hints(docx_path: Path) -> list[dict]:
                     {
                         "paragraph_index": idx,
                         "paragraph_excerpt": paragraph_text[:180],
+                        "match_candidates": _build_match_candidates(
+                            paragraph,
+                            paragraph_text,
+                            idx,
+                            paragraphs,
+                            parent_map,
+                        ),
                         "style_tags": tags,
                     }
                 )
@@ -591,6 +900,36 @@ def _normalize_for_match(text: str) -> str:
     normalized = re.sub(r"[`*_>#|\-]+", "", normalized)
     normalized = re.sub(r"\s+", "", normalized)
     return normalized
+
+
+def _extract_clause_key(text: str) -> str | None:
+    """Extract a leading clause number such as `5`, `5.1`, or `5.2`."""
+
+    normalized = text.strip()
+    normalized = normalized.translate(
+        str.maketrans(
+            {
+                "．": ".",
+                "。": ".",
+                "｡": ".",
+                "﹒": ".",
+                "、": ".",
+                "（": "(",
+                "）": ")",
+            }
+        )
+    )
+    normalized = re.sub(r"\s+", "", normalized)
+
+    sub_clause_match = re.match(r"^(\d+)\.(\d+)", normalized)
+    if sub_clause_match:
+        return f"{sub_clause_match.group(1)}.{sub_clause_match.group(2)}"
+
+    clause_match = re.match(r"^(\d+)\.(?!\d)", normalized)
+    if clause_match:
+        return clause_match.group(1)
+
+    return None
 
 
 def _find_line_index_for_excerpt(lines: list[str], excerpt: str, start_idx: int = 0) -> int | None:
@@ -622,6 +961,168 @@ def _find_line_index_for_excerpt(lines: list[str], excerpt: str, start_idx: int 
     return None
 
 
+def _find_line_index_for_clause_key(lines: list[str], clause_key: str, start_idx: int = 0) -> int | None:
+    """Find the Markdown line that starts with the same clause number."""
+
+    if not clause_key:
+        return None
+
+    for i in range(start_idx, len(lines)):
+        if _extract_clause_key(lines[i]) == clause_key:
+            return i
+
+    for i in range(0, start_idx):
+        if _extract_clause_key(lines[i]) == clause_key:
+            return i
+
+    return None
+
+
+def _find_line_index_for_candidates(
+    lines: list[str],
+    match_candidates: list[str],
+    fallback_excerpt: str,
+    start_idx: int = 0,
+) -> int | None:
+    """Try multiple matching candidates and fall back to the plain paragraph excerpt."""
+
+    fallback_clause_key = _extract_clause_key(fallback_excerpt)
+    if fallback_excerpt:
+        idx = _find_line_index_for_excerpt(lines, fallback_excerpt, start_idx=start_idx)
+        if idx is not None:
+            return idx
+        idx = _find_line_index_for_clause_key(lines, fallback_clause_key or "", start_idx=start_idx)
+        if idx is not None:
+            return idx
+
+    ordered: list[str] = []
+    fallback_norm = _normalize_whitespace(fallback_excerpt)
+    for candidate in _dedupe_nonempty_texts(match_candidates):
+        if fallback_norm and _normalize_whitespace(candidate) == fallback_norm:
+            continue
+        ordered.append(candidate)
+
+    if fallback_clause_key:
+        same_clause_candidates = [
+            candidate for candidate in ordered if _extract_clause_key(candidate) == fallback_clause_key
+        ]
+        other_candidates = [
+            candidate for candidate in ordered if _extract_clause_key(candidate) != fallback_clause_key
+        ]
+        ordered = same_clause_candidates + other_candidates
+
+    for candidate in ordered:
+        idx = _find_line_index_for_excerpt(lines, candidate, start_idx=start_idx)
+        if idx is not None:
+            line_clause_key = _extract_clause_key(lines[idx])
+            candidate_clause_key = _extract_clause_key(candidate)
+            if fallback_clause_key and line_clause_key and line_clause_key != fallback_clause_key:
+                continue
+            if fallback_clause_key and candidate_clause_key and candidate_clause_key != fallback_clause_key:
+                continue
+            return idx
+
+    if fallback_clause_key:
+        return _find_line_index_for_clause_key(lines, fallback_clause_key, start_idx=start_idx)
+
+    return None
+
+
+def repair_missing_numbered_paragraphs(md_text: str, source_paragraphs: list[str]) -> tuple[str, dict]:
+    """Insert numbered source paragraphs that Docling dropped from Markdown."""
+
+    if not md_text or not source_paragraphs:
+        return md_text, {"inserted_count": 0}
+
+    numbered_re = re.compile(
+        r"^(?:[一二三四五六七八九十]+、|\d+、|\d+\.\d+|[（(][一二三四五六七八九十0-9]+[)）])"
+    )
+    lines = md_text.splitlines()
+    present = {_normalize_for_match(line) for line in lines if _normalize_for_match(line)}
+
+    def _find_broken_line_index(paragraph: str) -> int | None:
+        top_match = re.match(r"^(\d+)、(.+)$", paragraph)
+        if top_match:
+            number = top_match.group(1)
+            text_only = top_match.group(2).strip()
+            for idx, line in enumerate(lines):
+                stripped = line.strip()
+                if stripped == f"{number}、" or stripped == text_only:
+                    return idx
+
+        sub_match = re.match(r"^(\d+)\.(\d+)\s*(.+)$", paragraph)
+        if sub_match:
+            sub_number = sub_match.group(2)
+            text_only = sub_match.group(3).strip()
+            for idx, line in enumerate(lines):
+                stripped = line.strip()
+                if stripped.startswith(f".{sub_number}") or stripped == text_only:
+                    return idx
+        return None
+
+    source_matches: list[tuple[str, int | None]] = []
+    search_cursor = 0
+    for paragraph in source_paragraphs:
+        idx = _find_line_index_for_excerpt(lines, paragraph, start_idx=search_cursor)
+        source_matches.append((paragraph, idx))
+        if idx is not None:
+            search_cursor = idx
+
+    inserts: dict[int, list[str]] = {}
+    inserted_count = 0
+
+    for idx, (paragraph, line_idx) in enumerate(source_matches):
+        normalized = _normalize_for_match(paragraph)
+        if line_idx is not None or not normalized or normalized in present:
+            continue
+        if not numbered_re.match(paragraph):
+            continue
+
+        broken_line_idx = _find_broken_line_index(paragraph)
+        if broken_line_idx is not None:
+            lines[broken_line_idx] = paragraph
+            present.add(normalized)
+            source_matches[idx] = (paragraph, broken_line_idx)
+            inserted_count += 1
+            continue
+
+        insert_at = None
+        for prev_idx in range(idx - 1, -1, -1):
+            prev_line_idx = source_matches[prev_idx][1]
+            if prev_line_idx is not None:
+                insert_at = prev_line_idx + 1
+                break
+        if insert_at is None:
+            for next_idx in range(idx + 1, len(source_matches)):
+                next_line_idx = source_matches[next_idx][1]
+                if next_line_idx is not None:
+                    insert_at = next_line_idx
+                    break
+        if insert_at is None:
+            continue
+
+        inserts.setdefault(insert_at, []).append(paragraph)
+        present.add(normalized)
+        inserted_count += 1
+
+    if not inserts:
+        return md_text, {"inserted_count": 0}
+
+    new_lines: list[str] = []
+    for idx, line in enumerate(lines):
+        if idx in inserts:
+            new_lines.extend(inserts[idx])
+        new_lines.append(line)
+    tail_idx = len(lines)
+    if tail_idx in inserts:
+        new_lines.extend(inserts[tail_idx])
+
+    merged = "\n".join(new_lines)
+    if md_text.endswith("\n"):
+        merged += "\n"
+    return merged, {"inserted_count": inserted_count}
+
+
 def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_hints: list[dict]) -> tuple[str, dict]:
     """将批注和样式提示直接追加到命中原文行尾。"""
     lines = md_text.splitlines()
@@ -640,7 +1141,12 @@ def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_h
 
     cursor = 0
     for item in sorted(comment_anchors, key=lambda x: (x.get("paragraph_index", 0), str(x.get("comment_id", "")))):
-        idx = _find_line_index_for_excerpt(lines, str(item.get("paragraph_excerpt", "")), start_idx=cursor)
+        idx = _find_line_index_for_candidates(
+            lines,
+            list(item.get("match_candidates", []) or []),
+            str(item.get("paragraph_excerpt", "")),
+            start_idx=cursor,
+        )
         if idx is None:
             continue
         comment_id = item.get("comment_id", "")
@@ -654,7 +1160,12 @@ def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_h
 
     cursor = 0
     for item in sorted(style_hints, key=lambda x: int(x.get("paragraph_index", 0))):
-        idx = _find_line_index_for_excerpt(lines, str(item.get("paragraph_excerpt", "")), start_idx=cursor)
+        idx = _find_line_index_for_candidates(
+            lines,
+            list(item.get("match_candidates", []) or []),
+            str(item.get("paragraph_excerpt", "")),
+            start_idx=cursor,
+        )
         if idx is None:
             continue
         tags = item.get("style_tags", [])
@@ -716,6 +1227,7 @@ def write_meta(
     device: str,
     elapsed_seconds: float,
     doc_conversion: dict | None,
+    docx_preprocess: dict | None,
     md_status: str,
     md_error: str,
     docling_error: str,
@@ -733,6 +1245,7 @@ def write_meta(
         "device": device,
         "elapsed_seconds": round(elapsed_seconds, 2),
         "doc_conversion": doc_conversion,
+        "docx_preprocess": docx_preprocess,
         "docling_error": docling_error,
         "md_export": {"status": md_status, "error": md_error},
         "comment_anchor_count": len(comment_anchors),
@@ -758,6 +1271,7 @@ def process_one(item: SourceItem, run_id: str, output_root: Path, device: str, n
 
     working_path = item.source_path
     doc_conversion_info: dict | None = None
+    docx_preprocess_info: dict | None = None
     comment_anchors: list[dict] = []
     style_hints: list[dict] = []
     inline_stats = {
@@ -771,7 +1285,13 @@ def process_one(item: SourceItem, run_id: str, output_root: Path, device: str, n
     if item.file_type == "doc":
         print("[预处理] 检测到 .doc，尝试转换为 .docx ...")
         conv_start = time.time()
-        docx_path, method = convert_doc_to_docx(item.source_path, out_dir / "_converted")
+        docx_path, method = convert_doc_to_docx(
+            item.source_path,
+            out_dir / "_converted",
+            output_root=output_root,
+            output_subdir=item.output_subdir,
+            current_run_id=run_id,
+        )
         conv_elapsed = round(time.time() - conv_start, 2)
         if docx_path:
             doc_conversion_info = {
@@ -793,6 +1313,7 @@ def process_one(item: SourceItem, run_id: str, output_root: Path, device: str, n
                 device,
                 elapsed,
                 doc_conversion_info,
+                docx_preprocess_info,
                 "error",
                 "",
                 msg,
@@ -809,6 +1330,19 @@ def process_one(item: SourceItem, run_id: str, output_root: Path, device: str, n
                 "reason": msg,
             }
 
+    docling_input_path = working_path
+    if working_path.suffix.lower() == ".docx":
+        docling_input_path, docx_preprocess_info = prepare_docx_for_docling(
+            working_path,
+            out_dir / "_docling_input",
+        )
+        if False and docx_preprocess_info and docx_preprocess_info.get("applied"):
+            print(
+                "[棰勫鐞哴 docx sanitized: "
+                f"{docx_preprocess_info.get('reason')} "
+                f"(count={docx_preprocess_info.get('alternate_content_count', 0)})"
+            )
+
     comment_source = working_path if working_path.suffix.lower() == ".docx" else None
     if comment_source:
         comment_anchors = extract_docx_comments_with_anchors(comment_source)
@@ -819,7 +1353,7 @@ def process_one(item: SourceItem, run_id: str, output_root: Path, device: str, n
             print(f"[样式] 抽取到 {len(style_hints)} 条样式提示")
 
     print(f"[Docling] 转换开始，device={device}")
-    document, docling_error = run_docling(working_path, device=device)
+    document, docling_error = run_docling(docling_input_path, device=device)
     if docling_error:
         elapsed = round(time.time() - t0, 2)
         write_meta(
@@ -829,6 +1363,7 @@ def process_one(item: SourceItem, run_id: str, output_root: Path, device: str, n
             device,
             elapsed,
             doc_conversion_info,
+            docx_preprocess_info,
             "error",
             "",
             docling_error,
@@ -847,10 +1382,12 @@ def process_one(item: SourceItem, run_id: str, output_root: Path, device: str, n
 
     print("[导出] 输出 Markdown ...")
     md_status, md_error = export_markdown(document, out_dir, apply_postprocess=not no_postprocess)
-    if md_status == "ok" and (comment_anchors or style_hints):
+    if md_status == "ok":
         md_path = out_dir / "output.md"
         current_md = md_path.read_text(encoding="utf-8")
-        enriched_md, inline_stats = inject_inline_annotations(current_md, comment_anchors, style_hints)
+        source_paragraphs = extract_docx_visible_paragraphs(comment_source) if comment_source else []
+        repaired_md, _ = repair_missing_numbered_paragraphs(current_md, source_paragraphs)
+        enriched_md, inline_stats = inject_inline_annotations(repaired_md, comment_anchors, style_hints)
         md_path.write_text(enriched_md, encoding="utf-8")
     elapsed = round(time.time() - t0, 2)
     write_meta(
@@ -860,6 +1397,7 @@ def process_one(item: SourceItem, run_id: str, output_root: Path, device: str, n
         device,
         elapsed,
         doc_conversion_info,
+        docx_preprocess_info,
         md_status,
         md_error,
         "",

@@ -42,6 +42,7 @@ def build_dataset_from_md_run(
     project_root: Path,
     md_run_id: str,
     output_path: Path,
+    run_root: Path | None = None,
 ) -> DatasetPayload:
     """Build unified metrics dataset from datatype_test markdown run.
 
@@ -49,11 +50,16 @@ def build_dataset_from_md_run(
         project_root: Workspace root.
         md_run_id: Markdown run id under outputs_md.
         output_path: Dataset output path.
+        run_root: Optional absolute run directory. Overrides auto-discovery when provided.
 
     Returns:
         Built dataset payload.
     """
-    run_root = discover_md_run_root(project_root, md_run_id)
+    if run_root is None:
+        run_root = discover_md_run_root(project_root, md_run_id)
+    if not run_root.exists():
+        msg = f"Markdown run directory not found: {run_root}"
+        raise FileNotFoundError(msg)
     summary_path = run_root / "run_summary.json"
     summary = read_json(summary_path)
 

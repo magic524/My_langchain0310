@@ -17,7 +17,9 @@ from contract_metrics.dataset_builder import build_dataset_from_md_run
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build metrics dataset from datatype_test markdown run")
-    parser.add_argument("--md-run-id", required=True, help="Run id under datatype_test/outputs_md")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--md-run-id", default="", help="Run id under datatype_test/outputs_md")
+    group.add_argument("--md-run-dir", default="", help="Absolute path to any outputs_md run directory")
     parser.add_argument(
         "--output",
         default="",
@@ -28,17 +30,26 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+
+    if args.md_run_dir:
+        run_id = Path(args.md_run_dir).name
+        run_root_override: Path | None = Path(args.md_run_dir).expanduser().resolve()
+    else:
+        run_id = args.md_run_id
+        run_root_override = None
+
     if args.output:
         output_path = Path(args.output).expanduser().resolve()
     else:
         output_path = (
-            METRICS_ROOT / "outputs" / "datasets" / f"dataset_{args.md_run_id}.json"
+            METRICS_ROOT / "outputs" / "datasets" / f"dataset_{run_id}.json"
         ).resolve()
 
     payload = build_dataset_from_md_run(
         project_root=PROJECT_ROOT,
-        md_run_id=args.md_run_id,
+        md_run_id=run_id,
         output_path=output_path,
+        run_root=run_root_override,
     )
 
     print(f"Dataset generated: {output_path}")

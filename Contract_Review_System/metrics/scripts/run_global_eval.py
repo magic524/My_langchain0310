@@ -1,4 +1,13 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
+"""Global-context prompt-only benchmark.
+
+Parallel to ``run_prompt_eval.py`` but uses a two-stage approach:
+  Stage 1 - full contract → global risk context
+  Stage 2 - per-clause review with global context injected
+
+Output is evaluated with the same pipeline so results can be directly
+compared against the clause-only ``run_prompt_eval.py`` baseline.
+"""
 from __future__ import annotations
 
 import argparse
@@ -19,7 +28,7 @@ if str(SRC_DIR) not in sys.path:
 from contract_metrics.config import load_eval_config
 from contract_metrics.dataset_builder import build_dataset_from_md_run
 from contract_metrics.evaluator import evaluate_dataset, load_dataset
-from contract_metrics.prompt_runner import run_prompt_only_review
+from contract_metrics.prompt_runner_global import run_global_prompt_review
 from contract_metrics.reporter import write_reports
 from contract_metrics.types import EvaluationPayload
 
@@ -30,7 +39,10 @@ def _parse_participants(raw: str) -> list[str]:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="One-command prompt-only benchmark: build dataset -> run model -> evaluate -> report"
+        description=(
+            "Global-context prompt benchmark: "
+            "build dataset -> Stage1 global scan -> Stage2 clause review -> evaluate -> report"
+        )
     )
     parser.add_argument("--md-run-id", required=True, help="Run id under datatype_test/outputs_md")
     parser.add_argument(
@@ -47,7 +59,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-dir",
         default="",
-        help="Output directory. Default: metrics/outputs/eval_runs/<timestamp>_one_shot",
+        help="Output directory. Default: metrics/outputs/eval_runs/<timestamp>_global_shot",
     )
     return parser.parse_args()
 
@@ -56,7 +68,7 @@ def _resolve_output_dir(raw_output: str) -> Path:
     if raw_output:
         return Path(raw_output).expanduser().resolve()
     run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    return (METRICS_ROOT / "outputs" / "eval_runs" / f"{run_id}_one_shot").resolve()
+    return (METRICS_ROOT / "outputs" / "eval_runs" / f"{run_id}_global_shot").resolve()
 
 
 def _safe_pct(value: float) -> str:
@@ -103,7 +115,11 @@ def _write_run_trace(
     trace_path = output_dir / "RUN_TRACE.md"
 
     lines = [
-        "# Prompt Eval Run Trace",
+        "# Global Prompt Eval Run Trace",
+        "",
+        "## Mode",
+        "",
+        "- strategy: `global_context` (Stage1 full-contract scan + Stage2 clause review with context)",
         "",
         "## Inputs",
         "",
@@ -126,9 +142,6 @@ def _write_run_trace(
             lines.append(f"- model_name: `{agent_runtime.get('model_name', '')}`")
             lines.append(f"- base_url: `{agent_runtime.get('base_url', '')}`")
             lines.append(f"- temperature: `{agent_runtime.get('temperature', '')}`")
-            lines.append(f"- timeout_seconds: `{agent_runtime.get('timeout_seconds', '')}`")
-            lines.append(f"- max_retries: `{agent_runtime.get('max_retries', '')}`")
-            lines.append(f"- retry_backoff_seconds: `{agent_runtime.get('retry_backoff_seconds', '')}`")
             lines.append(f"- api_key_masked: `{agent_runtime.get('api_key_masked', '')}`")
             lines.append(f"- extra_body: `{json.dumps(agent_runtime.get('extra_body', {}), ensure_ascii=False)}`")
 
@@ -167,7 +180,7 @@ def _write_miss_analysis(output_dir: Path, payload: EvaluationPayload) -> Path:
     analysis_path = output_dir / "MISS_ANALYSIS.md"
 
     lines = [
-        "# Miss Analysis",
+        "# Miss Analysis (Global-Context Mode)",
         "",
         "This file lists high miss-rate participant/policy combinations and example FN clauses.",
         "",
@@ -223,12 +236,12 @@ def main() -> None:
     agent_runtime: dict[str, Any] | None = None
     if "agent" in participants:
         _, contracts, _ = load_dataset(dataset_path)
-        agent_md_path = output_dir / "agent_review_report.md"
-        agent_md_path, agent_risk_count, agent_runtime = run_prompt_only_review(
+        agent_md_path = output_dir / "agent_global_review_report.md"
+        agent_md_path, agent_risk_count, agent_runtime = run_global_prompt_review(
             contracts=contracts,
             output_markdown_path=agent_md_path,
         )
-        print(f"Agent prompt-only output: {agent_md_path}")
+        print(f"Agent global output: {agent_md_path}")
         print(f"Agent detected risk clauses: {agent_risk_count}")
 
     eval_config = load_eval_config(Path(args.config).expanduser().resolve())

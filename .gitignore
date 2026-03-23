@@ -169,3 +169,6 @@ scratch/
 
 outputs/
 outputs_md/
+data/
+Contract_Review_System/tests/outputs/
+Contract_Review_System/only_prompt_local_llm/outputs/

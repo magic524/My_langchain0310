@@ -11,9 +11,9 @@ from typing import Any
 
 
 CURRENT_FILE = Path(__file__).resolve()
-ONLY_PROMPT_ROOT = CURRENT_FILE.parent
-CONTRACT_REVIEW_ROOT = CURRENT_FILE.parents[1]
-PROJECT_ROOT = CURRENT_FILE.parents[2]
+ONLY_PROMPT_ROOT = CURRENT_FILE.parents[2]
+CONTRACT_REVIEW_ROOT = CURRENT_FILE.parents[3]
+PROJECT_ROOT = CURRENT_FILE.parents[4]
 TESTS_ROOT = CONTRACT_REVIEW_ROOT / "tests"
 SRC_ROOT = TESTS_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
@@ -21,7 +21,7 @@ if str(SRC_ROOT) not in sys.path:
 
 from contract_tests.word_comment_export import export_local_llm_comment_docs
 
-from local_model_runner import load_runtime_config, run_local_prediction
+from .local_model_runner import load_runtime_config, run_local_prediction
 
 
 def _resolve_optional_path(path_str: str) -> Path:

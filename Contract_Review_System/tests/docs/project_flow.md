@@ -1,11 +1,11 @@
-# tests 项目流转说明
+﻿# tests 项目流转说明
 
 ## 1. 上游输入
 
 `tests` 默认读取：
 
 ```text
-data/contract_review_outputs/word2md/<run_id>/
+data/contract_review_outputs/word2md/<batch_name>/
 ```
 
 这里应至少包含：
@@ -16,19 +16,27 @@ data/contract_review_outputs/word2md/<run_id>/
 - 采纳情况说明 Markdown
 - `run_summary.json`
 
+如果上游来自 `only_prompt_local_llm`，则 `tests` 也可以直接读取：
+
+```text
+Contract_Review_System/only_prompt_local_llm/outputs/<job_name>/dataset_with_local_llm.json
+```
+
 ## 2. 数据集构建
 
 运行：
 
 ```powershell
 conda activate langchain
-python Contract_Review_System/tests/scripts/build_dataset.py --run-id 20260317_word2md_eval
+python Contract_Review_System/tests/scripts/build_dataset.py `
+  --input contract_md_260323 `
+  --output Contract_Review_System/tests/outputs/datasets/dataset_contract_md_260323.json
 ```
 
 产物：
 
 ```text
-Contract_Review_System/tests/outputs/datasets/dataset_<run_id>.json
+Contract_Review_System/tests/outputs/datasets/dataset_contract_md_260323.json
 ```
 
 ## 3. 评测执行
@@ -37,19 +45,24 @@ Contract_Review_System/tests/outputs/datasets/dataset_<run_id>.json
 
 ```powershell
 conda activate langchain
-python Contract_Review_System/tests/scripts/evaluate.py --run-id 20260317_word2md_eval
+python Contract_Review_System/tests/scripts/evaluate.py `
+  --input Contract_Review_System/tests/outputs/datasets/dataset_contract_md_260323.json `
+  --output Contract_Review_System/tests/outputs/eval_runs/contract_md_260323
 ```
 
 产物：
 
 ```text
-Contract_Review_System/tests/outputs/eval_runs/<run_id>/
-├── evaluation_result.json
-└── evaluation_report.md
+Contract_Review_System/tests/outputs/eval_runs/contract_md_260323/
+├─ evaluation_result.json
+├─ evaluation_report.md
+├─ 三方对照/
+└─ 总体汇总/
 ```
 
-## 4. 与 only_prompt_local_llm 的关系
+## 4. 与 `only_prompt_local_llm` 的关系
 
-- `tests` 提供底层数据集、匹配、评测、报告能力
-- `only_prompt_local_llm` 在本项目能力基础上补充本地模型预测、三方对照、总体汇总、原合同批注版导出
-- 如果你只是验证第三方平台和最终审查意见的传统评测，停在本项目即可
+- `only_prompt_local_llm` 负责生成 `local_llm` 结果、`dataset_with_local_llm.json` 和原合同批注版
+- `tests` 负责评测、三方对照和总体汇总
+- 如果你只做传统评测，可以只使用 `word2md -> tests`
+- 如果你要评测本地模型，则使用 `word2md -> only_prompt_local_llm -> tests`

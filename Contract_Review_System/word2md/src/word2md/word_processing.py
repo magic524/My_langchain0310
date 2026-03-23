@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from common import DOCX_NS
+from .common import DOCX_NS
 
 
 def try_libreoffice(doc_path: Path, output_dir: Path) -> Path | None:
@@ -253,17 +253,3 @@ def prepare_docx_for_docling(docx_path: Path, work_dir: Path) -> tuple[Path, dic
             "reason": "flatten_alternate_content_failed",
             "error": str(exc),
         }
-"""Compatibility re-export for `word2md.word_processing`."""
-
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-
-WORD2MD_ROOT = Path(__file__).resolve().parent
-SRC_ROOT = WORD2MD_ROOT / "src"
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
-
-from word2md.word_processing import *  # noqa: F403

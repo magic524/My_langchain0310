@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
 
-from common import WORD_NS, dedupe_nonempty_texts, normalize_whitespace
+from .common import WORD_NS, dedupe_nonempty_texts, normalize_whitespace
 
 
 def paragraph_text(paragraph: ET.Element) -> str:
@@ -272,17 +272,3 @@ def extract_docx_style_hints(docx_path: Path) -> list[dict]:
         return []
 
     return hints
-"""Compatibility re-export for `word2md.docx_features`."""
-
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-
-WORD2MD_ROOT = Path(__file__).resolve().parent
-SRC_ROOT = WORD2MD_ROOT / "src"
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
-
-from word2md.docx_features import *  # noqa: F403

@@ -2,6 +2,11 @@
   "python.analysis.include": [
     "libs/**",
   ],
+  "python.analysis.extraPaths": [
+    "Contract_Review_System/tests/src",
+    "Contract_Review_System/only_prompt_local_llm",
+    "Contract_Review_System/word2md"
+  ],
   "python.analysis.exclude": [
     "**/node_modules",
     "**/__pycache__",

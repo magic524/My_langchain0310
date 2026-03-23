@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from common import dedupe_nonempty_texts, normalize_whitespace
+from .common import dedupe_nonempty_texts, normalize_whitespace
 
 
 CHINESE_NUMS = [
@@ -480,17 +480,3 @@ def inject_inline_annotations(md_text: str, comment_anchors: list[dict], style_h
         "style_matched": style_matched,
         "style_unmatched": max(len(style_hints) - style_matched, 0),
     }
-"""Compatibility re-export for `word2md.markdown_formatter`."""
-
-from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-
-WORD2MD_ROOT = Path(__file__).resolve().parent
-SRC_ROOT = WORD2MD_ROOT / "src"
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
-
-from word2md.markdown_formatter import *  # noqa: F403

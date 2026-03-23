@@ -1,6 +1,61 @@
-# only_prompt_local_llm
+﻿# only_prompt_local_llm
 
 `only_prompt_local_llm` 是合同审查系统的本地模型调用子项目，负责用纯 prompt 方式调用本地 OpenAI 兼容 API，并产出 `local_llm` 结果与原合同批注版。
+
+## 当前目录结构
+
+```text
+only_prompt_local_llm/
+├─ README.md
+├─ .env
+├─ .env.example
+├─ docs/
+│  └─ structure.md
+├─ outputs/
+├─ scripts/
+│  └─ main.py
+├─ src/only_prompt_local_llm/
+│  ├─ __init__.py
+│  ├─ cli.py
+│  ├─ local_model_runner.py
+│  └─ export_parallel_reports_to_xlsx.py
+├─ main.py
+├─ local_model_runner.py
+└─ export_parallel_reports_to_xlsx.py
+```
+
+## 每个文件是干嘛的
+
+### 推荐使用的目录
+
+- `scripts/main.py`
+  - 推荐命令入口
+  - 以后优先从这里启动
+- `src/only_prompt_local_llm/cli.py`
+  - 真正的命令行解析入口
+  - 负责 `--input / --output` 等参数解析
+- `src/only_prompt_local_llm/local_model_runner.py`
+  - 本地模型主流程
+  - 负责读数据集、组装 prompt、调用本地 API、解析返回结果
+- `src/only_prompt_local_llm/export_parallel_reports_to_xlsx.py`
+  - Markdown 表格转 `xlsx`
+  - 当前主要供历史兼容和辅助导出使用
+- `docs/structure.md`
+  - 结构说明和维护约定
+
+### 兼容保留的文件
+
+- `main.py`
+  - 兼容旧入口
+- `local_model_runner.py`
+  - 历史主流程文件
+  - 后续建议只改 `src/only_prompt_local_llm/local_model_runner.py`
+- `export_parallel_reports_to_xlsx.py`
+  - 历史辅助脚本
+- `.env`
+  - 本地模型配置
+- `.env.example`
+  - 配置模板
 
 ## 这个子项目负责什么
 
@@ -10,27 +65,26 @@
 - 生成 `dataset_with_local_llm.json`，供 `tests` 后续评测和生成三方对照
 - 生成原合同批注版 Word 文件
 
-## 主入口
+## 这个子项目不负责什么
 
-```powershell
-conda activate langchain
-python Contract_Review_System/only_prompt_local_llm/main.py --run-id 20260317_word2md_eval
-```
+- 不负责三方对照
+- 不负责总体汇总
+- 不负责最终评测报告
 
 ## 默认输入输出
 
-- 默认读取：`data/contract_review_outputs/word2md/<run_id>`
-- 默认输出：`Contract_Review_System/only_prompt_local_llm/outputs/<run_id>_review_bundle_<YYYYMMDD>`
+- 默认读取：`data/contract_review_outputs/word2md/<batch_name>`
+- 默认输出：`Contract_Review_System/only_prompt_local_llm/outputs/<job_name>`
+
+说明：
+
+- `--input`：某次 `word2md` 批次名，或直接传某次 `word2md` 输出目录
+- `--output`：本次 local LLM 任务输出目录名，或完整输出目录路径
 
 ## 环境变量
 
-默认读取：
-
-- `Contract_Review_System/only_prompt_local_llm/.env`
-
-可参考：
-
-- `Contract_Review_System/only_prompt_local_llm/.env.example`
+- `.env`：当前实际运行配置
+- `.env.example`：新环境初始化时的参考模板
 
 常用字段：
 
@@ -42,37 +96,44 @@ python Contract_Review_System/only_prompt_local_llm/main.py --run-id 20260317_wo
 
 ## 常用命令
 
-全量运行：
+### 推荐入口
 
 ```powershell
 conda activate langchain
-python Contract_Review_System/only_prompt_local_llm/main.py --run-id 20260317_word2md_eval
+python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
+  --input contract_md_260323 `
+  --output 20260323_local_llm_only_prompt
 ```
 
-显式指定输出目录：
+### 兼容旧入口
 
 ```powershell
 conda activate langchain
-python Contract_Review_System/only_prompt_local_llm/main.py --run-id 20260317_word2md_eval --output-dir "Contract_Review_System/only_prompt_local_llm/outputs/20260317_word2md_eval_review_bundle_20260323"
+python Contract_Review_System/only_prompt_local_llm/main.py `
+  --input contract_md_260323 `
+  --output 20260323_local_llm_only_prompt
 ```
 
-复用已有模型原始返回，只重跑解析和报告：
+### 显式指定 `word2md` 输出目录
 
 ```powershell
 conda activate langchain
-python Contract_Review_System/only_prompt_local_llm/main.py --run-id 20260317_word2md_eval --reuse-raw-responses
+python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
+  --input data/contract_review_outputs/word2md/contract_md_260323 `
+  --output 20260323_local_llm_only_prompt
 ```
 
-只跑一份合同：
+### 复用已有模型原始返回，只重跑解析
 
 ```powershell
 conda activate langchain
-python Contract_Review_System/only_prompt_local_llm/main.py --run-id 20260317_word2md_eval --contract-filter "1-品牌球馆冠名合作协议"
+python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
+  --input contract_md_260323 `
+  --output 20260323_local_llm_only_prompt `
+  --reuse-raw-responses
 ```
 
 ## 关键产物
-
-输出根目录下会保留这些核心文件和文件夹：
 
 - `dataset_from_word2md.json`
 - `dataset_with_local_llm.json`
@@ -82,32 +143,13 @@ python Contract_Review_System/only_prompt_local_llm/main.py --run-id 20260317_wo
 - `raw_responses/`
 - `debug_requests/`
 
-## 你关心的最终交付结果
+## 后续衔接
 
-运行完成后，会直接生成：
+本项目完成后，下一步应交给 `tests`：
 
-- `原合同批注版_local_llm`
-- `dataset_with_local_llm.json`
-- `local_llm_predictions.json`
-- `原合同批注版_local_llm`
-
-## 目录示例
-
-```text
-Contract_Review_System/only_prompt_local_llm/outputs/<run_id>_review_bundle_<date>/
-├── 原合同批注版_local_llm/
-├── 三方对照/
-│   ├── 1-品牌球馆冠名合作协议_三方对照/
-│   ├── 2-服务协议_三方对照/
-│   ├── 3-保密协议_三方对照/
-│   └── 总体汇总/
-├── contract_runs/
-├── raw_responses/
-└── debug_requests/
+```powershell
+conda activate langchain
+python Contract_Review_System/tests/scripts/evaluate.py `
+  --input Contract_Review_System/only_prompt_local_llm/outputs/20260323_local_llm_only_prompt/dataset_with_local_llm.json `
+  --output Contract_Review_System/tests/outputs/eval_runs/20260323_local_llm_only_prompt
 ```
-
-## 维护约定
-
-- 用户侧统一只看 `main.py`
-- 如需调整 prompt、重试逻辑、JSON 兜底解析，修改 `local_model_runner.py`
-- 如需调整三方对照表现形式，修改 `tests/src/contract_tests/local_llm_review_pipeline.py` 与 `tests/src/contract_tests/parallel_review_report.py`

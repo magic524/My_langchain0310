@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>20260317_word2md_eval 总体汇总与计算过程</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f6f9;
+      --panel: #ffffff;
+      --text: #1c2430;
+      --muted: #5a6678;
+      --line: #d7dde7;
+      --head: #edf3fb;
+      --accent: #1c5fa8;
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #eef4fb 0%, var(--bg) 240px);
+      color: var(--text);
+      font-family: "Microsoft YaHei", "PingFang SC", "Segoe UI", sans-serif;
+      line-height: 1.6;
+    }
+    main {
+      max-width: 1800px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .sheet {
+      background: var(--panel);
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(28, 36, 48, 0.08);
+      padding: 28px 32px;
+      overflow: hidden;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      color: var(--accent);
+      margin: 1.25em 0 0.55em;
+      line-height: 1.3;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 30px;
+    }
+    h2 {
+      font-size: 24px;
+      border-bottom: 2px solid #e6edf7;
+      padding-bottom: 6px;
+    }
+    h3 {
+      font-size: 20px;
+    }
+    p, li {
+      font-size: 14px;
+    }
+    p {
+      margin: 0.45em 0 0.8em;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    ul {
+      margin: 0.5em 0 1em 1.25em;
+      padding: 0;
+    }
+    code {
+      font-family: "Consolas", "Courier New", monospace;
+      background: #f2f4f8;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-size: 0.95em;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      margin: 12px 0 28px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      background: #fff;
+    }
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    th {
+      background: var(--head);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="sheet">
+      <h1>20260317_word2md_eval 总体汇总与计算过程</h1>
+      <h2>总结</h2>
+      <p>经过格式验证，当前流程可将原始 <code>doc/docx</code> 合同稳定转换为 <code>md</code>，并用于模型交互与风险评测。</p>
+      <p>风险评测分为两种口径：</p>
+      <ul>
+        <li><code>口径A</code>：将采纳情况说明中的“采纳”“部分采纳”作为正样本标签。</li>
+        <li><code>口径B</code>：将采纳情况说明中的“采纳”“部分采纳”“未采纳”均作为正样本标签，近似第三方识别出的风险集合。</li>
+      </ul>
+      <p>两种口径下，分别对第三方平台与仅依靠提示词的本地模型进行条款级与风险点级评估，核心指标包括准确率、召回率、漏报率、误报率。</p>
+      <p>从当前总体结果看：</p>
+      <ul>
+        <li>条款识别层面：本地模型准确率整体略低于第三方平台。</li>
+        <li>风险点识别层面：在口径A（贴近人工审查标准）下，本地模型准确率与召回率均偏低，需后续重点优化。</li>
+      </ul>
+      <p>结果解释与使用边界：</p>
+      <ul>
+        <li>当前样本量较小，结论仅可作为阶段性参考。</li>
+        <li>现有真实值“采纳情况说明”来自第三方审查结果的筛选，因此第三方在现阶段会出现较高召回（部分场景接近或达到100%）。</li>
+        <li>若希望召回率成为更公平、可比较的指标，后续需补充“第三方未检出但人工确认存在”的风险点样本。</li>
+      </ul>
+      <h2>第三方平台 主来源文件</h2>
+      <p>表1：合同、第三方平台 主来源文件、文件形态判断（节选） 注：该表用于展示本节数据，指标定义见文末“指标说明”。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>合同</th><th>第三方平台 主来源文件</th><th>文件形态判断</th></tr></thead>
+          <tbody>
+          <tr><td>1-品牌球馆冠名合作协议</td><td>1-品牌球馆冠名合作协议/2-第三方平台审查结果/Alpha GPT/修订批注版-品牌球馆冠名合作协议/output.md</td><td>带批注的合同全文 Markdown</td></tr>
+          <tr><td>2-服务协议</td><td>2-服务协议/2-第三方平台审查结果/Alpha GPT/A-关于《服务协议》的审查意见书/output.md</td><td>独立审查意见书 Markdown</td></tr>
+          <tr><td>3-保密协议</td><td>3-保密协议/2-第三方平台审查结果/修订批注版_保密协议/output.md</td><td>带批注的合同全文 Markdown</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h2>总体结果</h2>
+      <p>说明：<code>解释结构完整度</code> 与 <code>建议可执行性</code> 的总体值沿用 [20260317_word2md_eval_report](./20260317_word2md_eval_report.md) 口径，按 3 份合同做简单平均。 表2：参与方、口径、Clause TP/FP/FN（节选） 注：该表用于展示本节数据，指标定义见文末“指标说明”。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>参与方</th><th>口径</th><th>Clause TP/FP/FN</th><th>条款准确率</th><th>条款召回率</th><th>条款漏报率</th><th>条款误报率</th><th>Risk TP/FP/FN</th><th>风险点准确率</th><th>风险点召回率</th><th>风险点漏报率</th><th>风险点误报率</th><th>风险点F1</th><th>解释结构完整度</th><th>建议可执行性</th></tr></thead>
+          <tbody>
+          <tr><td>本地模型</td><td>口径A（仅采纳 + 部分采纳）</td><td>8/5/10</td><td>61.54%</td><td>44.44%</td><td>55.56%</td><td>38.46%</td><td>5/9/13</td><td>35.71%</td><td>27.78%</td><td>72.22%</td><td>64.29%</td><td>31.25%</td><td>66.67%</td><td>66.67%</td></tr>
+          <tr><td>本地模型</td><td>口径B（全部标签）</td><td>11/2/18</td><td>84.62%</td><td>37.93%</td><td>62.07%</td><td>15.38%</td><td>9/5/24</td><td>64.29%</td><td>27.27%</td><td>72.73%</td><td>35.71%</td><td>38.30%</td><td>95.83%</td><td>100.00%</td></tr>
+          <tr><td>第三方平台</td><td>口径A（仅采纳 + 部分采纳）</td><td>18/11/0</td><td>62.07%</td><td>100.00%</td><td>0.00%</td><td>37.93%</td><td>18/17/0</td><td>51.43%</td><td>100.00%</td><td>0.00%</td><td>48.57%</td><td>67.92%</td><td>94.32%</td><td>79.42%</td></tr>
+          <tr><td>第三方平台</td><td>口径B（全部标签）</td><td>29/0/0</td><td>100.00%</td><td>100.00%</td><td>0.00%</td><td>0.00%</td><td>32/3/1</td><td>91.43%</td><td>96.97%</td><td>3.03%</td><td>8.57%</td><td>94.12%</td><td>92.29%</td><td>82.64%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h2>分合同结果</h2>
+      <p>表3：合同、参与方、口径（节选） 注：该表用于展示本节数据，指标定义见文末“指标说明”。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>合同</th><th>参与方</th><th>口径</th><th>Clause TP/FP/FN</th><th>条款F1</th><th>Risk TP/FP/FN</th><th>风险点F1</th></tr></thead>
+          <tbody>
+          <tr><td>1-品牌球馆冠名合作协议</td><td>本地模型</td><td>口径A（仅采纳 + 部分采纳）</td><td>5/1/6</td><td>58.82%</td><td>3/3/8</td><td>35.29%</td></tr>
+          <tr><td>1-品牌球馆冠名合作协议</td><td>本地模型</td><td>口径B（全部标签）</td><td>6/0/10</td><td>54.55%</td><td>4/2/13</td><td>34.78%</td></tr>
+          <tr><td>1-品牌球馆冠名合作协议</td><td>第三方平台</td><td>口径A（仅采纳 + 部分采纳）</td><td>11/5/0</td><td>81.48%</td><td>11/5/0</td><td>81.48%</td></tr>
+          <tr><td>1-品牌球馆冠名合作协议</td><td>第三方平台</td><td>口径B（全部标签）</td><td>16/0/0</td><td>100.00%</td><td>16/0/1</td><td>96.97%</td></tr>
+          <tr><td>2-服务协议</td><td>本地模型</td><td>口径A（仅采纳 + 部分采纳）</td><td>2/1/2</td><td>57.14%</td><td>2/2/2</td><td>50.00%</td></tr>
+          <tr><td>2-服务协议</td><td>本地模型</td><td>口径B（全部标签）</td><td>3/0/5</td><td>54.55%</td><td>3/1/7</td><td>42.86%</td></tr>
+          <tr><td>2-服务协议</td><td>第三方平台</td><td>口径A（仅采纳 + 部分采纳）</td><td>4/4/0</td><td>66.67%</td><td>4/9/0</td><td>47.06%</td></tr>
+          <tr><td>2-服务协议</td><td>第三方平台</td><td>口径B（全部标签）</td><td>8/0/0</td><td>100.00%</td><td>10/3/0</td><td>86.96%</td></tr>
+          <tr><td>3-保密协议</td><td>本地模型</td><td>口径A（仅采纳 + 部分采纳）</td><td>1/3/2</td><td>28.57%</td><td>0/4/3</td><td>0.00%</td></tr>
+          <tr><td>3-保密协议</td><td>本地模型</td><td>口径B（全部标签）</td><td>2/2/3</td><td>44.44%</td><td>2/2/4</td><td>40.00%</td></tr>
+          <tr><td>3-保密协议</td><td>第三方平台</td><td>口径A（仅采纳 + 部分采纳）</td><td>3/2/0</td><td>75.00%</td><td>3/3/0</td><td>66.67%</td></tr>
+          <tr><td>3-保密协议</td><td>第三方平台</td><td>口径B（全部标签）</td><td>5/0/0</td><td>100.00%</td><td>6/0/0</td><td>100.00%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h2>计算过程</h2>
+      <h3>本地模型 / 口径A（仅采纳 + 部分采纳）</h3>
+      <ul>
+        <li>Clause TP = 5 + 2 + 1 = <code>8</code></li>
+        <li>Clause FP = 1 + 1 + 3 = <code>5</code></li>
+        <li>Clause FN = 6 + 2 + 2 = <code>10</code></li>
+        <li>条款准确率 = <code>8 / (8 + 5) = 61.54%</code></li>
+        <li>条款召回率 = <code>8 / (8 + 10) = 44.44%</code></li>
+        <li>条款漏报率 = <code>10 / (8 + 10) = 55.56%</code></li>
+        <li>条款误报率 = <code>5 / (8 + 5) = 38.46%</code></li>
+        <li>Risk TP = 3 + 2 + 0 = <code>5</code></li>
+        <li>Risk FP = 3 + 2 + 4 = <code>9</code></li>
+        <li>Risk FN = 8 + 2 + 3 = <code>13</code></li>
+        <li>风险点准确率 = <code>5 / (5 + 9) = 35.71%</code></li>
+        <li>风险点召回率 = <code>5 / (5 + 13) = 27.78%</code></li>
+        <li>风险点漏报率 = <code>13 / (5 + 13) = 72.22%</code></li>
+        <li>风险点误报率 = <code>9 / (5 + 9) = 64.29%</code></li>
+        <li>风险点F1 = <code>2 * 35.71% * 27.78% / (35.71% + 27.78%) = 31.25%</code></li>
+        <li>解释结构完整度 = <code>(100.00% + 100.00% + 0.00%) / 3 = 66.67%</code></li>
+        <li>建议可执行性 = <code>(100.00% + 100.00% + 0.00%) / 3 = 66.67%</code></li>
+      </ul>
+      <h3>本地模型 / 口径B（全部标签）</h3>
+      <ul>
+        <li>Clause TP = 6 + 3 + 2 = <code>11</code></li>
+        <li>Clause FP = 0 + 0 + 2 = <code>2</code></li>
+        <li>Clause FN = 10 + 5 + 3 = <code>18</code></li>
+        <li>条款准确率 = <code>11 / (11 + 2) = 84.62%</code></li>
+        <li>条款召回率 = <code>11 / (11 + 18) = 37.93%</code></li>
+        <li>条款漏报率 = <code>18 / (11 + 18) = 62.07%</code></li>
+        <li>条款误报率 = <code>2 / (11 + 2) = 15.38%</code></li>
+        <li>Risk TP = 4 + 3 + 2 = <code>9</code></li>
+        <li>Risk FP = 2 + 1 + 2 = <code>5</code></li>
+        <li>Risk FN = 13 + 7 + 4 = <code>24</code></li>
+        <li>风险点准确率 = <code>9 / (9 + 5) = 64.29%</code></li>
+        <li>风险点召回率 = <code>9 / (9 + 24) = 27.27%</code></li>
+        <li>风险点漏报率 = <code>24 / (9 + 24) = 72.73%</code></li>
+        <li>风险点误报率 = <code>5 / (9 + 5) = 35.71%</code></li>
+        <li>风险点F1 = <code>2 * 64.29% * 27.27% / (64.29% + 27.27%) = 38.30%</code></li>
+        <li>解释结构完整度 = <code>(100.00% + 100.00% + 87.50%) / 3 = 95.83%</code></li>
+        <li>建议可执行性 = <code>(100.00% + 100.00% + 100.00%) / 3 = 100.00%</code></li>
+      </ul>
+      <h3>第三方平台 / 口径A（仅采纳 + 部分采纳）</h3>
+      <ul>
+        <li>Clause TP = 11 + 4 + 3 = <code>18</code></li>
+        <li>Clause FP = 5 + 4 + 2 = <code>11</code></li>
+        <li>Clause FN = 0 + 0 + 0 = <code>0</code></li>
+        <li>条款准确率 = <code>18 / (18 + 11) = 62.07%</code></li>
+        <li>条款召回率 = <code>18 / (18 + 0) = 100.00%</code></li>
+        <li>条款漏报率 = <code>0 / (18 + 0) = 0.00%</code></li>
+        <li>条款误报率 = <code>11 / (18 + 11) = 37.93%</code></li>
+        <li>Risk TP = 11 + 4 + 3 = <code>18</code></li>
+        <li>Risk FP = 5 + 9 + 3 = <code>17</code></li>
+        <li>Risk FN = 0 + 0 + 0 = <code>0</code></li>
+        <li>风险点准确率 = <code>18 / (18 + 17) = 51.43%</code></li>
+        <li>风险点召回率 = <code>18 / (18 + 0) = 100.00%</code></li>
+        <li>风险点漏报率 = <code>0 / (18 + 0) = 0.00%</code></li>
+        <li>风险点误报率 = <code>17 / (18 + 17) = 48.57%</code></li>
+        <li>风险点F1 = <code>2 * 51.43% * 100.00% / (51.43% + 100.00%) = 67.92%</code></li>
+        <li>解释结构完整度 = <code>(95.45% + 87.50% + 100.00%) / 3 = 94.32%</code></li>
+        <li>建议可执行性 = <code>(84.09% + 62.50% + 91.67%) / 3 = 79.42%</code></li>
+      </ul>
+      <h3>第三方平台 / 口径B（全部标签）</h3>
+      <ul>
+        <li>Clause TP = 16 + 8 + 5 = <code>29</code></li>
+        <li>Clause FP = 0 + 0 + 0 = <code>0</code></li>
+        <li>Clause FN = 0 + 0 + 0 = <code>0</code></li>
+        <li>条款准确率 = <code>29 / (29 + 0) = 100.00%</code></li>
+        <li>条款召回率 = <code>29 / (29 + 0) = 100.00%</code></li>
+        <li>条款漏报率 = <code>0 / (29 + 0) = 0.00%</code></li>
+        <li>条款误报率 = <code>0 / (29 + 0) = 0.00%</code></li>
+        <li>Risk TP = 16 + 10 + 6 = <code>32</code></li>
+        <li>Risk FP = 0 + 3 + 0 = <code>3</code></li>
+        <li>Risk FN = 1 + 0 + 0 = <code>1</code></li>
+        <li>风险点准确率 = <code>32 / (32 + 3) = 91.43%</code></li>
+        <li>风险点召回率 = <code>32 / (32 + 1) = 96.97%</code></li>
+        <li>风险点漏报率 = <code>1 / (32 + 1) = 3.03%</code></li>
+        <li>风险点误报率 = <code>3 / (32 + 3) = 8.57%</code></li>
+        <li>风险点F1 = <code>2 * 91.43% * 96.97% / (91.43% + 96.97%) = 94.12%</code></li>
+        <li>解释结构完整度 = <code>(96.88% + 80.00% + 100.00%) / 3 = 92.29%</code></li>
+        <li>建议可执行性 = <code>(81.25% + 75.00% + 91.67%) / 3 = 82.64%</code></li>
+      </ul>
+      <h2>指标说明</h2>
+      <ul>
+        <li><code>TP</code>：预测命中。模型或第三方报出的风险点，与人工标签中的风险点成功匹配。</li>
+        <li><code>FP</code>：误报。模型或第三方报出了风险点，但人工标签中没有对应风险点。</li>
+        <li><code>FN</code>：漏报。人工标签里有风险点，但模型或第三方没有报出来。</li>
+        <li><code>Clause</code> 指标：只看“这条条款是否被识别成风险条款”。</li>
+        <li><code>Risk</code> 指标：看“具体风险点是否逐条对上”。</li>
+        <li><code>Precision</code>：命中数占全部预测数的比例，越高表示误报越少。</li>
+        <li><code>Recall</code>：命中数占全部标签数的比例，越高表示漏报越少。</li>
+        <li><code>Miss Rate</code>：漏报率，等于 <code>FN / (TP + FN)</code>。</li>
+        <li><code>False Alarm Rate</code>：误报率，等于 <code>FP / (TP + FP)</code>。</li>
+        <li><code>F1</code>：综合 <code>Precision</code> 与 <code>Recall</code> 的调和平均。</li>
+        <li><code>解释结构完整度</code>：只在已命中的风险点上计算，衡量解释文本结构是否完整。</li>
+        <li><code>建议可执行性</code>：只在已命中的风险点上计算，衡量建议是否具体可执行。</li>
+        <li><code>口径A</code>：仅统计采纳与部分采纳的标签（accept + partial）。</li>
+        <li><code>口径B</code>：统计采纳说明中的全部标签。</li>
+        <li><code>标签数</code>：当前口径下人工标签总数。</li>
+        <li><code>预测数</code>：当前参与方识别结果总数。</li>
+        <li><code>标签风险点数</code>：人工审查标签中的风险点总数。</li>
+        <li><code>识别风险点数</code>：当前参与方识别出的风险点总数。</li>
+        <li><code>TP / FP / FN</code>：分别表示命中、误报、漏报。</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

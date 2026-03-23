@@ -1,0 +1,205 @@
+{
+  "dataset_path": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix2\\20260317_word2md_eval_third_party_fix2_20260318\\dataset_with_local_llm.json",
+  "generated_at": "2026-03-20T15:30:03.610103",
+  "output_dir": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix2\\20260317_word2md_eval_third_party_fix2_20260318\\原合同批注版_local_llm",
+  "contracts": [
+    {
+      "contract_id": "1-品牌球馆冠名合作协议",
+      "source_docx": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\1-品牌球馆冠名合作协议\\1-原合同：品牌球馆冠名合作协议.docx",
+      "output_docx": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix2\\20260317_word2md_eval_third_party_fix2_20260318\\原合同批注版_local_llm\\1-品牌球馆冠名合作协议_本地模型批注版.docx",
+      "risk_count": 8,
+      "comment_count": 8,
+      "comments": [
+        {
+          "risk_id": "1-品牌球馆冠名合作协议_local_llm_001",
+          "title": "争议解决管辖对甲方不利",
+          "start_paragraph_index": 81,
+          "end_paragraph_index": 81,
+          "matched_text": "本协议履行过程中发生的任何争议,双方应首先友好协商解决;协商不成的,任何一方均有权向乙方球馆所在地人民法院提起诉讼.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1314
+        },
+        {
+          "risk_id": "1-品牌球馆冠名合作协议_local_llm_002",
+          "title": "违约责任赔偿范围不明确且过高",
+          "start_paragraph_index": 73,
+          "end_paragraph_index": 73,
+          "matched_text": "4.若乙方违反无竞品承诺,在球馆内引入甲方同品类竞品品牌信息,甲方有权要求乙方立即拆除相关信息;情节严重的,甲方有权解除本协议,乙方需赔偿甲方全部损失.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1338
+        },
+        {
+          "risk_id": "1-品牌球馆冠名合作协议_local_llm_003",
+          "title": "品牌曝光落地费用承担主体不明",
+          "start_paragraph_index": 64,
+          "end_paragraph_index": 64,
+          "matched_text": "本协议签订后15个工作日内,完成球馆冠名更名.门头标识更换.logo地面喷涂.广告位安装.品牌展架摆放等所有品牌曝光权益的落地工作,并拍摄清晰的现场照片(不少于10张,含整体场景及细节特写).视频(时长不少于1分钟)提交甲方验收,验收合格后方视为完成落地.",
+          "anchor_strategy": "context_or_table_match",
+          "score": 227
+        },
+        {
+          "risk_id": "1-品牌球馆冠名合作协议_local_llm_004",
+          "title": "赞助物资质保期覆盖不足",
+          "start_paragraph_index": 14,
+          "end_paragraph_index": 14,
+          "matched_text": "3.合作期限:自2026年1月20日起至2028年1月20日止,共计2年.合作期限届满前30日,双方可协商续约事宜,同等条件下甲方享有优先续约权.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1243
+        },
+        {
+          "risk_id": "1-品牌球馆冠名合作协议_local_llm_005",
+          "title": "无竞品承诺可能影响正常经营",
+          "start_paragraph_index": 56,
+          "end_paragraph_index": 56,
+          "matched_text": "合作期内,乙方球馆所有区域(尤其是匹克球场地.产品陈列区.广告展示区)不得出现甲方同品类(匹克球相关器材.装备)竞品的品牌logo.广告宣传.物资投放等信息,确保甲方品牌独家曝光权益.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1283
+        },
+        {
+          "risk_id": "1-品牌球馆冠名合作协议_local_llm_006",
+          "title": "知识产权侵权责任未约定",
+          "start_paragraph_index": 64,
+          "end_paragraph_index": 64,
+          "matched_text": "本协议签订后15个工作日内,完成球馆冠名更名.门头标识更换.logo地面喷涂.广告位安装.品牌展架摆放等所有品牌曝光权益的落地工作,并拍摄清晰的现场照片(不少于10张,含整体场景及细节特写).视频(时长不少于1分钟)提交甲方验收,验收合格后方视为完成落地.",
+          "anchor_strategy": "document_fallback",
+          "score": 0
+        },
+        {
+          "risk_id": "1-品牌球馆冠名合作协议_local_llm_007",
+          "title": "不可抗力条款缺失",
+          "start_paragraph_index": 64,
+          "end_paragraph_index": 64,
+          "matched_text": "本协议签订后15个工作日内,完成球馆冠名更名.门头标识更换.logo地面喷涂.广告位安装.品牌展架摆放等所有品牌曝光权益的落地工作,并拍摄清晰的现场照片(不少于10张,含整体场景及细节特写).视频(时长不少于1分钟)提交甲方验收,验收合格后方视为完成落地.",
+          "anchor_strategy": "document_fallback",
+          "score": 0
+        },
+        {
+          "risk_id": "1-品牌球馆冠名合作协议_local_llm_008",
+          "title": "合作终止后物资所有权归属模糊",
+          "start_paragraph_index": 79,
+          "end_paragraph_index": 79,
+          "matched_text": "4.协议解除或终止后,乙方需停止使用\"\"冠名名称及品牌相关标识,若甲方同意乙方继续使用赞助物资,物资所有权归乙方所有;若甲方要求收回物资,乙方需配合返还(正常使用损耗除外).",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1369
+        }
+      ]
+    },
+    {
+      "contract_id": "2-服务协议",
+      "source_docx": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\data\\合同数据-2026.3.12\\2-服务协议\\1-原合同-服务协议.docx",
+      "output_docx": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix2\\20260317_word2md_eval_third_party_fix2_20260318\\原合同批注版_local_llm\\2-服务协议_本地模型批注版.docx",
+      "risk_count": 6,
+      "comment_count": 6,
+      "comments": [
+        {
+          "risk_id": "2-服务协议_local_llm_001",
+          "title": "合同主体信息缺失",
+          "start_paragraph_index": 3,
+          "end_paragraph_index": 3,
+          "matched_text": "法定代表人:",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1123
+        },
+        {
+          "risk_id": "2-服务协议_local_llm_002",
+          "title": "服务费用金额未定",
+          "start_paragraph_index": 20,
+          "end_paragraph_index": 20,
+          "matched_text": "本协议约定的服务范围,2026年1月20日前,乙方提供元服务费用发票,甲方收到发票后5个工作日内向乙方支付元;2026年2月5日前,乙方提供元服务费用发票,甲方收到发票后5个工作日内向乙方支付元.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1162
+        },
+        {
+          "risk_id": "2-服务协议_local_llm_003",
+          "title": "服务验收标准缺失",
+          "start_paragraph_index": 15,
+          "end_paragraph_index": 15,
+          "matched_text": "5.1服务期内,乙方安排人员在坦桑尼亚国家对甲方在客车上装配的253台播放器产品进行软件升级,服务截止时间之前完成全部车辆的软件升级工作.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1234
+        },
+        {
+          "risk_id": "2-服务协议_local_llm_004",
+          "title": "境外服务风险未明确",
+          "start_paragraph_index": 15,
+          "end_paragraph_index": 15,
+          "matched_text": "5.1服务期内,乙方安排人员在坦桑尼亚国家对甲方在客车上装配的253台播放器产品进行软件升级,服务截止时间之前完成全部车辆的软件升级工作.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1189
+        },
+        {
+          "risk_id": "2-服务协议_local_llm_005",
+          "title": "违约责任约定不对等",
+          "start_paragraph_index": 22,
+          "end_paragraph_index": 22,
+          "matched_text": "1.若乙方未按照本协议约定的服务范围.时间提供服务,或服务质量不符合约定,给甲方造成损失的,乙方应承担相应的赔偿责任;情节严重的,甲方有权解除本协议,并要求乙方退还已支付的服务费用(如有);",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1201
+        },
+        {
+          "risk_id": "2-服务协议_local_llm_006",
+          "title": "付款条件未挂钩验收",
+          "start_paragraph_index": 20,
+          "end_paragraph_index": 20,
+          "matched_text": "本协议约定的服务范围,2026年1月20日前,乙方提供元服务费用发票,甲方收到发票后5个工作日内向乙方支付元;2026年2月5日前,乙方提供元服务费用发票,甲方收到发票后5个工作日内向乙方支付元.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1136
+        }
+      ]
+    },
+    {
+      "contract_id": "3-保密协议",
+      "source_docx": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\v2\\word2md\\outputs_md\\20260317_word2md_eval\\3-保密协议\\1-原合同-保密协议\\_converted\\1-原合同-保密协议.docx",
+      "output_docx": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix2\\20260317_word2md_eval_third_party_fix2_20260318\\原合同批注版_local_llm\\3-保密协议_本地模型批注版.docx",
+      "risk_count": 5,
+      "comment_count": 5,
+      "comments": [
+        {
+          "risk_id": "3-保密协议_local_llm_001",
+          "title": "违约责任范围过大",
+          "start_paragraph_index": 26,
+          "end_paragraph_index": 26,
+          "matched_text": "5．2无论何种原因致使甲.乙双方不能继续执行本协议,乙方保证无条件.无偿把所有从甲方得到的与该项目相关的一切技术资料文件的原件和一切复印.眷录及其它已读入记忆的媒体等信息资料交还给甲方.甲方将保留对有关本协议所述保密信息因乙方原因外泄而造成甲方损失的索赔权利.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1234
+        },
+        {
+          "risk_id": "3-保密协议_local_llm_002",
+          "title": "争议管辖法院不利",
+          "start_paragraph_index": 28,
+          "end_paragraph_index": 28,
+          "matched_text": "如果双方对本协议的履行发生争议,应该本着诚实信用的原则,协商解决,协商不成,应提交甲方所地的人民法院管辖.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1205
+        },
+        {
+          "risk_id": "3-保密协议_local_llm_003",
+          "title": "单方解除权过于严苛",
+          "start_paragraph_index": 18,
+          "end_paragraph_index": 18,
+          "matched_text": "3.3乙方仅向所需最小限度的乙方职工出示所述技术资料文件,并责成该职工承担本协议项下的保密义务.万一该职工发生了违反本协议规定的行为时,乙方将承担赔偿甲方损失的连带责任.甲方有权立即终止与乙方的一切商务活动.",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1304
+        },
+        {
+          "risk_id": "3-保密协议_local_llm_004",
+          "title": "保密期限永久化",
+          "start_paragraph_index": 23,
+          "end_paragraph_index": 23,
+          "matched_text": "除非双方以书面方式同意解除一方或双方在本协议项下的部分或全部保密义务,否则,接收方应对在该项目中获得的披露方保密信息承担持续的保密义务,直至这些保密信息因非接收方原因被公开为止.",
+          "anchor_strategy": "context_or_table_match",
+          "score": 150
+        },
+        {
+          "risk_id": "3-保密协议_local_llm_005",
+          "title": "合同基本信息及条款存在错误",
+          "start_paragraph_index": 2,
+          "end_paragraph_index": 2,
+          "matched_text": "本保密协议(\"本协议\")由以下双方于2026年02月02日签署:",
+          "anchor_strategy": "direct_clause_match",
+          "score": 1163
+        }
+      ]
+    }
+  ]
+}

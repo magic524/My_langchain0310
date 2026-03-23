@@ -1,0 +1,9 @@
+{
+  "source_run_dir": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs\\20260317_word2md_eval",
+  "output_root": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix\\20260317_word2md_eval_third_party_fix_20260318",
+  "fixed_dataset": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix\\20260317_word2md_eval_third_party_fix_20260318\\dataset_with_local_llm.json",
+  "evaluation_report": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix\\20260317_word2md_eval_third_party_fix_20260318\\evaluation_report.md",
+  "evaluation_json": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix\\20260317_word2md_eval_third_party_fix_20260318\\evaluation_result.json",
+  "compare_markdown_count": 4,
+  "compare_dir": "E:\\Magic_wu_python\\Contract_Review_System\\My_langchain0310\\Contract_Review_System\\metrics_v2\\local_llm\\outputs_fix\\20260317_word2md_eval_third_party_fix_20260318\\细节对比_fix"
+}

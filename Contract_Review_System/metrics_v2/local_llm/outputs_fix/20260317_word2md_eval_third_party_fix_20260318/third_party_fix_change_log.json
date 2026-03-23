@@ -1,0 +1,22 @@
+{
+  "changes": [
+    {
+      "contract_id": "1-品牌球馆冠名合作协议",
+      "old_count": 35,
+      "new_count": 25,
+      "warning": ""
+    },
+    {
+      "contract_id": "2-服务协议",
+      "old_count": 24,
+      "new_count": 24,
+      "warning": ""
+    },
+    {
+      "contract_id": "3-保密协议",
+      "old_count": 13,
+      "new_count": 6,
+      "warning": ""
+    }
+  ]
+}

@@ -101,8 +101,8 @@ only_prompt_local_llm/
 ```powershell
 conda activate langchain
 python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
-  --input contract_md_260323 `
-  --output 20260323_local_llm_only_prompt
+  --input 合同数据md-2026.3.23 `
+  --output output_file_neam
 ```
 
 ### 兼容旧入口
@@ -110,8 +110,8 @@ python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
 ```powershell
 conda activate langchain
 python Contract_Review_System/only_prompt_local_llm/main.py `
-  --input contract_md_260323 `
-  --output 20260323_local_llm_only_prompt
+  --input 合同数据md-2026.3.23 `
+  --output output_file_neam
 ```
 
 ### 显式指定 `word2md` 输出目录
@@ -119,8 +119,8 @@ python Contract_Review_System/only_prompt_local_llm/main.py `
 ```powershell
 conda activate langchain
 python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
-  --input data/contract_review_outputs/word2md/contract_md_260323 `
-  --output 20260323_local_llm_only_prompt
+  --input data\contract_review_outputs\word2md\合同数据md-2026.3.23 `
+  --output try
 ```
 
 ### 复用已有模型原始返回，只重跑解析
@@ -128,8 +128,8 @@ python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
 ```powershell
 conda activate langchain
 python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
-  --input contract_md_260323 `
-  --output 20260323_local_llm_only_prompt `
+  --input 合同数据md-2026.3.23 `
+  --output output_file_neam `
   --reuse-raw-responses
 ```
 
@@ -150,6 +150,6 @@ python Contract_Review_System/only_prompt_local_llm/scripts/main.py `
 ```powershell
 conda activate langchain
 python Contract_Review_System/tests/scripts/evaluate.py `
-  --input Contract_Review_System/only_prompt_local_llm/outputs/20260323_local_llm_only_prompt/dataset_with_local_llm.json `
-  --output Contract_Review_System/tests/outputs/eval_runs/20260323_local_llm_only_prompt
+  --input Contract_Review_System/only_prompt_local_llm/outputs/output_file_neam/dataset_with_local_llm.json `
+  --output Contract_Review_System/tests/outputs/eval_runs/output_file_neam
 ```

@@ -21,7 +21,12 @@ if str(SRC_ROOT) not in sys.path:
 
 from contract_tests.word_comment_export import export_local_llm_comment_docs
 
-from .local_model_runner import load_runtime_config, run_local_prediction
+from .local_model_runner import (
+    load_runtime_config,
+    resolve_runtime_env_path,
+    run_local_prediction,
+)
+
 
 
 def _resolve_optional_path(path_str: str) -> Path:
@@ -322,7 +327,7 @@ def main() -> None:
 
     output_root = Path(args.output_dir).resolve() if args.output_dir else _default_output_root(args.run_id)
     word2md_run_root = Path(args.word2md_run_dir).resolve() if args.word2md_run_dir else None
-    runtime = load_runtime_config((ONLY_PROMPT_ROOT / ".env").resolve())
+    runtime = load_runtime_config(resolve_runtime_env_path())
 
     pipeline_info = run_local_prediction(
         args.run_id,
@@ -497,7 +502,7 @@ def main() -> None:
         output_root = _resolve_optional_path(args.output_dir)
     else:
         output_root = _default_output_root(word2md_run_id)
-    runtime = load_runtime_config((ONLY_PROMPT_ROOT / ".env").resolve())
+    runtime = load_runtime_config(resolve_runtime_env_path())
 
     pipeline_info = run_local_prediction(
         word2md_run_id,

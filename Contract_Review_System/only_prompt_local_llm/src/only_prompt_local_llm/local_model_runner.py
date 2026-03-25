@@ -90,6 +90,36 @@ def load_env_file(env_path: Path) -> dict[str, str]:
         values[key.strip()] = value.strip()
     return values
 
+def resolve_runtime_env_path(explicit_env_path: Path | None = None) -> Path:
+    """Resolve the runtime `.env` path for local LLM tasks.
+
+    Priority:
+    1. Explicit path passed by caller
+    2. Shared `Contract_Review_System/.env`
+    3. Legacy `only_prompt_local_llm/.env`
+    """
+
+    candidates: list[Path] = []
+    if explicit_env_path is not None:
+        candidates.append(explicit_env_path.resolve())
+
+    candidates.extend(
+        [
+            (CONTRACT_REVIEW_ROOT / ".env").resolve(),
+            (ONLY_PROMPT_ROOT / ".env").resolve(),
+        ]
+    )
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+
+    msg = (
+        "未找到可用的 `.env` 配置文件。"
+        f"已检查: {[str(path) for path in candidates]}"
+    )
+    raise FileNotFoundError(msg)
+
 
 def load_runtime_config(env_path: Path) -> RuntimeConfig:
     """从 `.env` 读取本地模型配置。"""

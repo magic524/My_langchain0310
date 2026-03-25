@@ -1,233 +1,66 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import sys
-import urllib.error
-import urllib.request
 from copy import deepcopy
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
 
 CURRENT_FILE = Path(__file__).resolve()
-ONLY_PROMPT_ROOT = CURRENT_FILE.parents[2]
 CONTRACT_REVIEW_ROOT = CURRENT_FILE.parents[3]
 PROJECT_ROOT = CURRENT_FILE.parents[4]
 TESTS_ROOT = CONTRACT_REVIEW_ROOT / "tests"
 SRC_ROOT = TESTS_ROOT / "src"
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from Contract_Review_System.common.local_llm_client import (
+    RuntimeConfig,
+    build_payload,
+    post_chat_request,
+)
 from contract_tests.dataset_builder import build_dataset
 from contract_tests.types import RiskItem
 
 
-SYSTEM_PROMPT = """你是合同审查助手。
-
-你会收到一整份合同的 markdown 全文。
-你的任务是找出合同中的风险点，并输出严格 JSON。
-
-要求：
-1. 只输出 JSON，不要输出解释性前后缀。
-2. 风险点要尽量绑定原合同中的具体条款原文。
-3. explanation 要说明风险原因或不利后果。
-4. suggestion 要给出可执行的修改建议。
-5. 如果没有识别到风险，输出 {"risks": []}。
-"""
+SYSTEM_PROMPT = """浣犳槸鍚堝悓瀹℃煡鍔╂墜銆?
+浣犱細鏀跺埌涓€鏁翠唤鍚堝悓鐨?markdown 鍏ㄦ枃銆?浣犵殑浠诲姟鏄壘鍑哄悎鍚屼腑鐨勯闄╃偣锛屽苟杈撳嚭涓ユ牸 JSON銆?
+瑕佹眰锛?1. 鍙緭鍑?JSON锛屼笉瑕佽緭鍑鸿В閲婃€у墠鍚庣紑銆?2. 椋庨櫓鐐硅灏介噺缁戝畾鍘熷悎鍚屼腑鐨勫叿浣撴潯娆惧師鏂囥€?3. explanation 瑕佽鏄庨闄╁師鍥犳垨涓嶅埄鍚庢灉銆?4. suggestion 瑕佺粰鍑哄彲鎵ц鐨勪慨鏀瑰缓璁€?5. 濡傛灉娌℃湁璇嗗埆鍒伴闄╋紝杈撳嚭 {"risks": []}銆?"""
 
 
-USER_PROMPT_TEMPLATE = """请审查下面这份合同全文，并找出风险点。
-
-输出格式必须是：
+USER_PROMPT_TEMPLATE = """璇峰鏌ヤ笅闈㈣繖浠藉悎鍚屽叏鏂囷紝骞舵壘鍑洪闄╃偣銆?
+杈撳嚭鏍煎紡蹇呴』鏄細
 {{
   "risks": [
     {{
-      "title": "风险标题",
-      "clause_text": "对应的合同原文片段",
-      "explanation": "风险原因或后果",
-      "suggestion": "修改建议"
+      "title": "椋庨櫓鏍囬",
+      "clause_text": "瀵瑰簲鐨勫悎鍚屽師鏂囩墖娈?,
+      "explanation": "椋庨櫓鍘熷洜鎴栧悗鏋?,
+      "suggestion": "淇敼寤鸿"
     }}
   ]
 }}
 
-注意：
-- 这是整份合同全文输入，不要按段落逐段回答。
-- `title` 要简洁明确。
-- `clause_text` 尽量摘录原合同中的关键条款原文。
-- `suggestion` 不要只写“建议完善”，要尽量写具体。
-
-合同全文如下：
-
+娉ㄦ剰锛?- 杩欐槸鏁翠唤鍚堝悓鍏ㄦ枃杈撳叆锛屼笉瑕佹寜娈佃惤閫愭鍥炵瓟銆?- `title` 瑕佺畝娲佹槑纭€?- `clause_text` 灏介噺鎽樺綍鍘熷悎鍚屼腑鐨勫叧閿潯娆惧師鏂囥€?- `suggestion` 涓嶈鍙啓鈥滃缓璁畬鍠勨€濓紝瑕佸敖閲忓啓鍏蜂綋銆?
+鍚堝悓鍏ㄦ枃濡備笅锛?
 {contract_text}
 """
 
 
-@dataclass(slots=True)
-class RuntimeConfig:
-    """本地模型运行配置。"""
-
-    model_name: str
-    api_key: str
-    base_url: str
-    temperature: float
-    extra_body: dict[str, Any] | None
-
-
-def load_env_file(env_path: Path) -> dict[str, str]:
-    """手动读取 `.env`，避免额外依赖。"""
-
-    values: dict[str, str] = {}
-    if not env_path.exists():
-        msg = f".env 不存在: {env_path}"
-        raise FileNotFoundError(msg)
-
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        values[key.strip()] = value.strip()
-    return values
-
-def resolve_runtime_env_path(explicit_env_path: Path | None = None) -> Path:
-    """Resolve the runtime `.env` path for local LLM tasks.
-
-    Priority:
-    1. Explicit path passed by caller
-    2. Shared `Contract_Review_System/.env`
-    3. Legacy `only_prompt_local_llm/.env`
-    """
-
-    candidates: list[Path] = []
-    if explicit_env_path is not None:
-        candidates.append(explicit_env_path.resolve())
-
-    candidates.extend(
-        [
-            (CONTRACT_REVIEW_ROOT / ".env").resolve(),
-            (ONLY_PROMPT_ROOT / ".env").resolve(),
-        ]
-    )
-
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-
-    msg = (
-        "未找到可用的 `.env` 配置文件。"
-        f"已检查: {[str(path) for path in candidates]}"
-    )
-    raise FileNotFoundError(msg)
-
-
-def load_runtime_config(env_path: Path) -> RuntimeConfig:
-    """从 `.env` 读取本地模型配置。"""
-
-    values = load_env_file(env_path)
-    model_name = (
-        values.get("OPENAI_LLM_MODEL")
-        or values.get("OPENAI_MODEL_NAME")
-        or values.get("OPENAI_MODEL")
-        or "InstructModel"
-    )
-    base_url = values.get("OPENAI_API_BASE") or values.get("OPENAI_BASE_URL")
-    if not base_url:
-        msg = "缺少 OPENAI_API_BASE / OPENAI_BASE_URL"
-        raise RuntimeError(msg)
-
-    api_key = values.get("OPENAI_API_KEY", "EMPTY")
-    temperature_raw = values.get("OPENAI_TEMPERATURE", "0.0")
-    try:
-        temperature = float(temperature_raw)
-    except ValueError:
-        temperature = 0.0
-
-    extra_body: dict[str, Any] | None = None
-    extra_body_raw = values.get("OPENAI_EXTRA_BODY", "").strip()
-    if extra_body_raw:
-        loaded = json.loads(extra_body_raw)
-        if isinstance(loaded, dict):
-            extra_body = loaded
-
-    return RuntimeConfig(
-        model_name=model_name,
-        api_key=api_key,
-        base_url=base_url,
-        temperature=temperature,
-        extra_body=extra_body,
-    )
-
-
-def build_payload(
-    runtime: RuntimeConfig,
-    messages: list[tuple[str, str]],
-    *,
-    extra_body: dict[str, Any] | None,
-) -> dict[str, Any]:
-    """构造发送给本地模型的请求体。"""
-
-    payload: dict[str, Any] = {
-        "model": runtime.model_name,
-        "messages": [{"role": role, "content": content} for role, content in messages],
-        "temperature": runtime.temperature,
-    }
-    if extra_body:
-        payload.update(extra_body)
-    return payload
-
-
-def post_chat_request(runtime: RuntimeConfig, payload: dict[str, Any]) -> str:
-    """向 OpenAI 兼容接口发送一次请求。"""
-
-    url = runtime.base_url.rstrip("/") + "/chat/completions"
-    headers = {"Content-Type": "application/json"}
-    if runtime.api_key and runtime.api_key != "EMPTY":
-        headers["Authorization"] = f"Bearer {runtime.api_key}"
-
-    request = urllib.request.Request(
-        url=url,
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers=headers,
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=180) as response:
-            body = response.read().decode("utf-8")
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="ignore")
-        msg = f"模型接口请求失败: HTTP {exc.code} {detail}"
-        raise RuntimeError(msg) from exc
-    except urllib.error.URLError as exc:
-        msg = f"模型接口连接失败: {exc.reason}"
-        raise RuntimeError(msg) from exc
-
-    try:
-        parsed = json.loads(body)
-    except json.JSONDecodeError as exc:
-        msg = f"模型接口返回的内容不是合法 JSON: {body[:400]}"
-        raise RuntimeError(msg) from exc
-
-    choices = parsed.get("choices") or []
-    if not choices:
-        return body
-    message = choices[0].get("message") or {}
-    content = message.get("content")
-    if isinstance(content, str):
-        return content.strip()
-    return body
-
-
 def send_chat_via_langchain(runtime: RuntimeConfig, messages: list[tuple[str, str]]) -> str:
-    """优先按 LangChain 的 ChatOpenAI 方式调用本地模型。"""
+    """Internal helper."""
 
     try:
         from langchain_core.messages import HumanMessage, SystemMessage
         from langchain_openai import ChatOpenAI
     except ImportError as exc:
         msg = (
-            "当前环境缺少 `langchain_openai` 或 `langchain_core`，"
-            "请在 `langchain` conda 环境中运行，或安装相应依赖。"
+            "Missing `langchain_openai` or `langchain_core`. "
+            "Please run this in the `langchain` conda environment or install the required packages."
         )
         raise RuntimeError(msg) from exc
 
@@ -261,7 +94,7 @@ def send_chat_via_langchain(runtime: RuntimeConfig, messages: list[tuple[str, st
 
 
 def sanitize_payload_for_debug(payload: dict[str, Any]) -> dict[str, Any]:
-    """生成适合落盘的调试请求体，避免把整份合同重复写入调试文件。"""
+    """Internal helper."""
 
     sanitized = deepcopy(payload)
     messages = sanitized.get("messages")
@@ -281,7 +114,7 @@ def sanitize_payload_for_debug(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def write_debug_payload(debug_path: Path, payload: dict[str, Any], *, note: str) -> None:
-    """写入当前请求的调试信息，便于排查服务端 500。"""
+    """Internal helper."""
 
     debug_path.parent.mkdir(parents=True, exist_ok=True)
     debug_path.write_text(
@@ -303,7 +136,7 @@ def send_chat(
     *,
     debug_path: Path | None = None,
 ) -> str:
-    """调用本地模型，并在 500 时自动降级重试。"""
+    """Internal helper."""
 
     primary_payload = build_payload(runtime, messages, extra_body=runtime.extra_body)
     if debug_path is not None:
@@ -314,7 +147,7 @@ def send_chat(
     except RuntimeError as exc:
         primary_error = str(exc)
     except Exception as exc:  # noqa: BLE001
-        primary_error = f"ChatOpenAI 调用失败: {exc}"
+        primary_error = f"ChatOpenAI 璋冪敤澶辫触: {exc}"
 
     if runtime.extra_body:
         fallback_payload = build_payload(runtime, messages, extra_body=None)
@@ -332,7 +165,7 @@ def send_chat(
         except RuntimeError as fallback_exc:
             fallback_error = str(fallback_exc)
         except Exception as fallback_exc:  # noqa: BLE001
-            fallback_error = f"ChatOpenAI 降级调用失败: {fallback_exc}"
+            fallback_error = f"ChatOpenAI 闄嶇骇璋冪敤澶辫触: {fallback_exc}"
 
         try:
             return post_chat_request(
@@ -348,10 +181,10 @@ def send_chat(
         except RuntimeError as raw_fallback_exc:
             raw_fallback_error = str(raw_fallback_exc)
             msg = (
-                "模型接口多次请求都失败。"
-                f"首次调用: {primary_error}。"
-                f"去掉 OPENAI_EXTRA_BODY 后的 ChatOpenAI 调用: {fallback_error}。"
-                f"最终直接 HTTP 降级调用仍失败: {raw_fallback_error}"
+                "Local model requests failed multiple times. "
+                f"First attempt: {primary_error}. "
+                f"Retry without OPENAI_EXTRA_BODY via ChatOpenAI: {fallback_error}. "
+                f"Final raw HTTP fallback also failed: {raw_fallback_error}"
             )
             raise RuntimeError(msg) from raw_fallback_exc
 
@@ -359,7 +192,7 @@ def send_chat(
 
 
 def extract_json_block(text: str) -> dict[str, Any]:
-    """从模型输出中提取最后一个合法 JSON 对象。"""
+    """Internal helper."""
 
     stripped = text.strip()
     if not stripped:
@@ -383,7 +216,7 @@ def extract_json_block(text: str) -> dict[str, Any]:
 
 
 def extract_risk_dicts_by_lines(text: str) -> list[dict[str, str]]:
-    """当整段 JSON 非法时，按字段行兜底提取风险点。"""
+    """Internal helper."""
 
     marker = text.rfind('"risks"')
     if marker == -1:
@@ -434,7 +267,7 @@ def extract_risk_dicts_by_lines(text: str) -> list[dict[str, str]]:
 
 
 def parse_local_risks(contract_id: str, raw_text: str) -> list[RiskItem]:
-    """把模型 JSON 结果转成 `RiskItem`。"""
+    """Internal helper."""
 
     payload = extract_json_block(raw_text)
     risks = payload.get("risks") or []
@@ -470,7 +303,7 @@ def parse_local_risks(contract_id: str, raw_text: str) -> list[RiskItem]:
 
 
 def load_dataset_payload(dataset_path: Path) -> dict[str, Any]:
-    """读取原始数据集 JSON。"""
+    """Internal helper."""
 
     return json.loads(dataset_path.read_text(encoding="utf-8"))
 
@@ -480,14 +313,14 @@ def filter_contracts(
     *,
     contract_filter: str | None,
 ) -> dict[str, Any]:
-    """按合同名称子串过滤数据集。"""
+    """Internal helper."""
 
     if not contract_filter:
         return dataset_payload
 
     contracts = dataset_payload.get("contracts", [])
     if not isinstance(contracts, list):
-        msg = "数据集 contracts 字段格式不正确"
+        msg = "dataset_payload['contracts'] must be a list."
         raise RuntimeError(msg)
 
     filtered_contracts = []
@@ -499,7 +332,7 @@ def filter_contracts(
             filtered_contracts.append(contract)
 
     if not filtered_contracts:
-        msg = f"未找到匹配合同: {contract_filter}"
+        msg = f"鏈壘鍒板尮閰嶅悎鍚? {contract_filter}"
         raise RuntimeError(msg)
 
     filtered_payload = dict(dataset_payload)
@@ -516,7 +349,7 @@ def run_local_prediction(
     reuse_raw_responses: bool = False,
     contract_filter: str | None = None,
 ) -> dict[str, str]:
-    """执行本地模型预测并生成带 `local_llm` 的数据集。"""
+    """Internal helper."""
 
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -582,3 +415,4 @@ def run_local_prediction(
         "dataset_path": str(derived_dataset_path),
         "prediction_path": str(prediction_path),
     }
+

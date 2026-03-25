@@ -16,16 +16,19 @@ CONTRACT_REVIEW_ROOT = CURRENT_FILE.parents[3]
 PROJECT_ROOT = CURRENT_FILE.parents[4]
 TESTS_ROOT = CONTRACT_REVIEW_ROOT / "tests"
 SRC_ROOT = TESTS_ROOT / "src"
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from contract_tests.word_comment_export import export_local_llm_comment_docs
 
-from .local_model_runner import (
+from Contract_Review_System.common.local_llm_client import (
     load_runtime_config,
     resolve_runtime_env_path,
-    run_local_prediction,
 )
+
+from .local_model_runner import run_local_prediction
 
 
 

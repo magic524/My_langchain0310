@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import re
 import shutil
-import sys
 from pathlib import Path
 from typing import Any
 
 from .evaluator import evaluate_dataset
+from .export_parallel_reports_to_xlsx import export_markdown_to_xlsx
+from .format_parallel_reports_for_client import process_markdown_dir
 from .markdown_table_export import convert_markdown_file_to_html
 from .parallel_review_report import (
     load_parallel_audits,
@@ -15,14 +16,6 @@ from .parallel_review_report import (
     write_overall_summary_report,
 )
 from .reporter import write_reports
-
-
-ONLY_PROMPT_ROOT = Path(__file__).resolve().parents[3] / "only_prompt_local_llm"
-if str(ONLY_PROMPT_ROOT) not in sys.path:
-    sys.path.insert(0, str(ONLY_PROMPT_ROOT))
-
-from export_parallel_reports_to_xlsx import export_markdown_to_xlsx  # noqa: E402
-from format_parallel_reports_for_client import process_markdown_dir  # noqa: E402
 
 
 RISK_MARKER = "【风险点】"

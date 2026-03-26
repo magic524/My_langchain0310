@@ -1,6 +1,7 @@
 name: contract-review-ci
 
 on:
+  workflow_dispatch:
   pull_request:
     branches:
       - main

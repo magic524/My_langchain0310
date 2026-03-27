@@ -27,26 +27,41 @@ from contract_tests.dataset_builder import build_dataset
 from contract_tests.types import RiskItem
 
 
-SYSTEM_PROMPT = """浣犳槸鍚堝悓瀹℃煡鍔╂墜銆?
-浣犱細鏀跺埌涓€鏁翠唤鍚堝悓鐨?markdown 鍏ㄦ枃銆?浣犵殑浠诲姟鏄壘鍑哄悎鍚屼腑鐨勯闄╃偣锛屽苟杈撳嚭涓ユ牸 JSON銆?
-瑕佹眰锛?1. 鍙緭鍑?JSON锛屼笉瑕佽緭鍑鸿В閲婃€у墠鍚庣紑銆?2. 椋庨櫓鐐硅灏介噺缁戝畾鍘熷悎鍚屼腑鐨勫叿浣撴潯娆惧師鏂囥€?3. explanation 瑕佽鏄庨闄╁師鍥犳垨涓嶅埄鍚庢灉銆?4. suggestion 瑕佺粰鍑哄彲鎵ц鐨勪慨鏀瑰缓璁€?5. 濡傛灉娌℃湁璇嗗埆鍒伴闄╋紝杈撳嚭 {"risks": []}銆?"""
+SYSTEM_PROMPT = """你是合同审查助手。
+
+你会收到一整份合同的 markdown 全文。
+你的任务是找出合同中的风险点，并输出严格 JSON。
+
+要求：
+1. 只输出 JSON，不要输出解释性前后缀。
+2. 风险点要尽量绑定原合同中的具体条款原文。
+3. explanation 要说明风险原因或不利后果。
+4. suggestion 要给出可执行的修改建议。
+5. 如果没有识别到风险，输出 {"risks": []}。
+"""
 
 
-USER_PROMPT_TEMPLATE = """璇峰鏌ヤ笅闈㈣繖浠藉悎鍚屽叏鏂囷紝骞舵壘鍑洪闄╃偣銆?
-杈撳嚭鏍煎紡蹇呴』鏄細
+USER_PROMPT_TEMPLATE = """请审查下面这份合同全文，并找出风险点。
+
+输出格式必须是：
 {{
   "risks": [
     {{
-      "title": "椋庨櫓鏍囬",
-      "clause_text": "瀵瑰簲鐨勫悎鍚屽師鏂囩墖娈?,
-      "explanation": "椋庨櫓鍘熷洜鎴栧悗鏋?,
-      "suggestion": "淇敼寤鸿"
+            "title": "风险标题",
+            "clause_text": "对应的合同原文片段",
+            "explanation": "风险原因或后果",
+            "suggestion": "修改建议"
     }}
   ]
 }}
 
-娉ㄦ剰锛?- 杩欐槸鏁翠唤鍚堝悓鍏ㄦ枃杈撳叆锛屼笉瑕佹寜娈佃惤閫愭鍥炵瓟銆?- `title` 瑕佺畝娲佹槑纭€?- `clause_text` 灏介噺鎽樺綍鍘熷悎鍚屼腑鐨勫叧閿潯娆惧師鏂囥€?- `suggestion` 涓嶈鍙啓鈥滃缓璁畬鍠勨€濓紝瑕佸敖閲忓啓鍏蜂綋銆?
-鍚堝悓鍏ㄦ枃濡備笅锛?
+注意：
+- 这是整份合同全文输入，不要按段落逐段回答。
+- `title` 要简洁明确。
+- `clause_text` 尽量摘录原合同中的关键条款原文。
+- `suggestion` 不要只写“建议完善”，要尽量写具体。
+
+合同全文如下：
 {contract_text}
 """
 
@@ -147,7 +162,7 @@ def send_chat(
     except RuntimeError as exc:
         primary_error = str(exc)
     except Exception as exc:  # noqa: BLE001
-        primary_error = f"ChatOpenAI 璋冪敤澶辫触: {exc}"
+        primary_error = f"ChatOpenAI 调用失败: {exc}"
 
     if runtime.extra_body:
         fallback_payload = build_payload(runtime, messages, extra_body=None)
@@ -165,7 +180,7 @@ def send_chat(
         except RuntimeError as fallback_exc:
             fallback_error = str(fallback_exc)
         except Exception as fallback_exc:  # noqa: BLE001
-            fallback_error = f"ChatOpenAI 闄嶇骇璋冪敤澶辫触: {fallback_exc}"
+            fallback_error = f"ChatOpenAI 降级调用失败: {fallback_exc}"
 
         try:
             return post_chat_request(
@@ -332,7 +347,7 @@ def filter_contracts(
             filtered_contracts.append(contract)
 
     if not filtered_contracts:
-        msg = f"鏈壘鍒板尮閰嶅悎鍚? {contract_filter}"
+        msg = f"未找到匹配合同: {contract_filter}"
         raise RuntimeError(msg)
 
     filtered_payload = dict(dataset_payload)

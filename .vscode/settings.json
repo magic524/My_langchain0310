@@ -3,9 +3,10 @@
     "libs/**",
   ],
   "python.analysis.extraPaths": [
+    "Contract_Review_System",
     "Contract_Review_System/tests/src",
-    "Contract_Review_System/only_prompt_local_llm",
-    "Contract_Review_System/word2md"
+    "Contract_Review_System/only_prompt_local_llm/src",
+    "Contract_Review_System/word2md/src"
   ],
   "python.analysis.exclude": [
     "**/node_modules",

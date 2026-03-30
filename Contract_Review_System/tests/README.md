@@ -1,20 +1,24 @@
-﻿# tests
+# tests
 
-`tests` 是合同审查系统的评测与报告子项目，负责消费 `word2md` 和 `local_llm` 产物，并输出可追溯的评测结果、三方对照和总体汇总。
+`tests` 是合同审查系统里的评测与报告子项目，负责消费 `word2md` 与 `only_prompt_local_llm` 产物，并输出可追溯的评测结果、三方对照和总体汇总。
 
-## 这个子项目负责什么
+## 职责边界
 
-- 从 `word2md` 的某次输出构建统一数据集
-- 解析原合同、第三方审查结果、最终审查意见、采纳说明
-- 计算条款级和风险点级指标
+这个子项目负责：
+
+- 从 `word2md` 输出构建评测数据集
+- 解析第三方审查结果、最终审查意见、采纳说明
+- 计算条款级与风险点级指标
 - 输出 `evaluation_result.json` 和 `evaluation_report.md`
-- 当数据集包含 `local_llm` 参与方时，输出三方对照和总体汇总
+- 当数据集包含 `local_llm` 参与方时，生成三方对照和总体汇总
 
-## 这个子项目不负责什么
+这个子项目不负责：
 
-- 不直接调用本地模型 API
-- 不维护 prompt 实验脚本
-- 不承担原合同批注版导出
+- 直接调用本地模型 API
+- 维护 prompt 实验代码
+- 维护原合同 Word 批注导出逻辑
+
+`local_llm` 原合同批注导出现在由 `Contract_Review_System/only_prompt_local_llm` 自己维护。
 
 ## 默认输入输出
 
@@ -99,4 +103,5 @@ tests/
 
 - 评测逻辑只依赖 `word2md` 或 `dataset_with_local_llm` 产物
 - 如需扩展更多参与方，优先在 `src/contract_tests/` 补齐解析和匹配逻辑
-- `only_prompt_local_llm` 只负责生成 `local_llm` 结果与原合同批注版；评测与对照统一放在本项目
+- `only_prompt_local_llm` 只负责生成 `local_llm` 结果与原合同批注版
+- 如需测试 `only_prompt_local_llm` 的文档批注逻辑，测试代码应直接导入生产模块，而不是把实现留在 `tests` 项目里

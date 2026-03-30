@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import json
 import sys
@@ -9,22 +9,18 @@ from typing import Any
 
 
 CURRENT_FILE = Path(__file__).resolve()
-CONTRACT_REVIEW_ROOT = CURRENT_FILE.parents[3]
 PROJECT_ROOT = CURRENT_FILE.parents[4]
-TESTS_ROOT = CONTRACT_REVIEW_ROOT / "tests"
-SRC_ROOT = TESTS_ROOT / "src"
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
-if str(SRC_ROOT) not in sys.path:
-    sys.path.insert(0, str(SRC_ROOT))
 
 from Contract_Review_System.common.local_llm_client import (
     RuntimeConfig,
     build_payload,
     post_chat_request,
 )
-from contract_tests.dataset_builder import build_dataset
-from contract_tests.types import RiskItem
+
+from .dataset_builder import build_dataset
+from .review_types import RiskItem
 
 
 SYSTEM_PROMPT = """你是合同审查助手。
@@ -67,7 +63,7 @@ USER_PROMPT_TEMPLATE = """请审查下面这份合同全文，并找出风险点
 
 
 def send_chat_via_langchain(runtime: RuntimeConfig, messages: list[tuple[str, str]]) -> str:
-    """Internal helper."""
+    """Send a request through LangChain when the dependencies are available."""
 
     try:
         from langchain_core.messages import HumanMessage, SystemMessage
@@ -109,7 +105,7 @@ def send_chat_via_langchain(runtime: RuntimeConfig, messages: list[tuple[str, st
 
 
 def sanitize_payload_for_debug(payload: dict[str, Any]) -> dict[str, Any]:
-    """Internal helper."""
+    """Drop large prompt bodies while keeping enough debug context."""
 
     sanitized = deepcopy(payload)
     messages = sanitized.get("messages")
@@ -129,7 +125,7 @@ def sanitize_payload_for_debug(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def write_debug_payload(debug_path: Path, payload: dict[str, Any], *, note: str) -> None:
-    """Internal helper."""
+    """Persist a sanitized request for troubleshooting."""
 
     debug_path.parent.mkdir(parents=True, exist_ok=True)
     debug_path.write_text(
@@ -151,7 +147,7 @@ def send_chat(
     *,
     debug_path: Path | None = None,
 ) -> str:
-    """Internal helper."""
+    """Send a local-model request with a small fallback chain."""
 
     primary_payload = build_payload(runtime, messages, extra_body=runtime.extra_body)
     if debug_path is not None:
@@ -167,7 +163,11 @@ def send_chat(
     if runtime.extra_body:
         fallback_payload = build_payload(runtime, messages, extra_body=None)
         if debug_path is not None:
-            write_debug_payload(debug_path, fallback_payload, note="fallback_request_without_extra_body")
+            write_debug_payload(
+                debug_path,
+                fallback_payload,
+                note="fallback_request_without_extra_body",
+            )
         try:
             fallback_runtime = RuntimeConfig(
                 model_name=runtime.model_name,
@@ -207,7 +207,7 @@ def send_chat(
 
 
 def extract_json_block(text: str) -> dict[str, Any]:
-    """Internal helper."""
+    """Extract the last valid JSON object containing a `risks` list."""
 
     stripped = text.strip()
     if not stripped:
@@ -231,7 +231,7 @@ def extract_json_block(text: str) -> dict[str, Any]:
 
 
 def extract_risk_dicts_by_lines(text: str) -> list[dict[str, str]]:
-    """Internal helper."""
+    """Fallback line-based extraction when the model returns malformed JSON."""
 
     marker = text.rfind('"risks"')
     if marker == -1:
@@ -282,7 +282,7 @@ def extract_risk_dicts_by_lines(text: str) -> list[dict[str, str]]:
 
 
 def parse_local_risks(contract_id: str, raw_text: str) -> list[RiskItem]:
-    """Internal helper."""
+    """Convert a model response into normalized local risk items."""
 
     payload = extract_json_block(raw_text)
     risks = payload.get("risks") or []
@@ -318,7 +318,7 @@ def parse_local_risks(contract_id: str, raw_text: str) -> list[RiskItem]:
 
 
 def load_dataset_payload(dataset_path: Path) -> dict[str, Any]:
-    """Internal helper."""
+    """Load a dataset JSON payload from disk."""
 
     return json.loads(dataset_path.read_text(encoding="utf-8"))
 
@@ -328,7 +328,7 @@ def filter_contracts(
     *,
     contract_filter: str | None,
 ) -> dict[str, Any]:
-    """Internal helper."""
+    """Optionally narrow the dataset to matching contracts."""
 
     if not contract_filter:
         return dataset_payload
@@ -364,7 +364,7 @@ def run_local_prediction(
     reuse_raw_responses: bool = False,
     contract_filter: str | None = None,
 ) -> dict[str, str]:
-    """Internal helper."""
+    """Run local-model review and persist the derived dataset artifacts."""
 
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -420,14 +420,19 @@ def run_local_prediction(
         )
 
     prediction_path = output_dir / "local_llm_predictions.json"
-    prediction_path.write_text(json.dumps(local_prediction_dump, ensure_ascii=False, indent=2), encoding="utf-8")
+    prediction_path.write_text(
+        json.dumps(local_prediction_dump, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
     derived_dataset_path = output_dir / "dataset_with_local_llm.json"
-    derived_dataset_path.write_text(json.dumps(dataset_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    derived_dataset_path.write_text(
+        json.dumps(dataset_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     return {
         "output_dir": str(output_dir),
         "dataset_source_path": str(dataset_source_path),
         "dataset_path": str(derived_dataset_path),
         "prediction_path": str(prediction_path),
     }
-

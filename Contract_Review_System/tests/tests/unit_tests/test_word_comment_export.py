@@ -5,7 +5,7 @@ import zipfile
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from contract_tests.word_comment_export import (
+from only_prompt_local_llm.word_comment_export import (
     annotate_docx_with_comments,
     find_best_anchor,
     normalize_text,

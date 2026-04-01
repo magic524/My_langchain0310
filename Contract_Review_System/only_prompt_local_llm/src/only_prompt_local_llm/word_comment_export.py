@@ -744,3 +744,47 @@ def export_local_llm_comment_docs(dataset_path: Path, output_dir: Path) -> dict[
     )
     (output_dir / "批注导出结果.md").write_text("\n".join(markdown_lines), encoding="utf-8")
     return summary_payload
+
+
+def export_local_llm_comment_docs_deliverable(dataset_path: Path, output_dir: Path) -> dict[str, Any]:
+    """Generate only deliverable docx files without extra summary side files."""
+
+    dataset_payload = json.loads(dataset_path.read_text(encoding="utf-8"))
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    contracts_summary: list[dict[str, Any]] = []
+    for contract in dataset_payload.get("contracts", []):
+        contract_id = str(contract.get("contract_id", "")).strip()
+        if not contract_id:
+            continue
+
+        source_docx = resolve_source_docx(contract)
+        meta_path = resolve_meta_path(contract)
+        safe_name = contract_id.replace("/", "_").replace("\\", "_").replace(":", "_")
+        output_docx = output_dir / f"{safe_name}_本地模型批注版.docx"
+        local_risks = list((contract.get("participants") or {}).get("local_llm") or [])
+        comment_summary = annotate_docx_with_comments(
+            source_docx,
+            output_docx,
+            local_risks,
+            contract=contract,
+            meta_path=meta_path,
+        )
+
+        contracts_summary.append(
+            {
+                "contract_id": contract_id,
+                "source_docx": str(source_docx),
+                "output_docx": str(output_docx),
+                "risk_count": len(local_risks),
+                "comment_count": len(comment_summary),
+                "comments": comment_summary,
+            }
+        )
+
+    return {
+        "dataset_path": str(dataset_path),
+        "generated_at": datetime.now().isoformat(),
+        "output_dir": str(output_dir),
+        "contracts": contracts_summary,
+    }

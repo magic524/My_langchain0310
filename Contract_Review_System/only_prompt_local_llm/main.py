@@ -1,7 +1,7 @@
 """Main entrypoint for `only_prompt_local_llm`.
 
 Keep the common `main.py` entry at the project root, while delegating the
-actual CLI implementation to `src/only_prompt_local_llm/cli.py`.
+actual CLI implementation to `src/only_prompt_local_llm/delivery_cli.py`.
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from only_prompt_local_llm.cli import main
+from only_prompt_local_llm.delivery_cli import main
 
 
 if __name__ == "__main__":

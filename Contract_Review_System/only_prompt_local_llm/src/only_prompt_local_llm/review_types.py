@@ -36,6 +36,14 @@ class RiskItem:
 
 
 @dataclass(slots=True)
+class ReviewPromptContext:
+    """Structured prompt preferences for a local review run."""
+
+    review_stance: str = ""
+    extra_user_instruction: str = ""
+
+
+@dataclass(slots=True)
 class ContractDataset:
     """单个合同的数据集对象。"""
 
@@ -45,6 +53,27 @@ class ContractDataset:
     clauses: list[ClauseUnit]
     labels: list[RiskItem]
     participants: dict[str, list[RiskItem]]
+
+
+@dataclass(slots=True)
+class LocalLlmContractResult:
+    """生产链路中的单合同 local LLM 审查结果。"""
+
+    contract_id: str
+    source_files: dict[str, str]
+    full_contract_text: str
+    clauses: list[ClauseUnit]
+    local_llm_risks: list[RiskItem]
+    raw_response_path: str = ""
+
+
+@dataclass(slots=True)
+class LocalLlmResultPayload:
+    """生产链路输出的纯 local LLM 结果。"""
+
+    meta: dict[str, Any]
+    warnings: list[str]
+    contracts: list[LocalLlmContractResult]
 
 
 @dataclass(slots=True)

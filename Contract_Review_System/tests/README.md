@@ -68,7 +68,7 @@ conda activate langchain
 python Contract_Review_System/tests/scripts/evaluate.py `
   --input Contract_Review_System/tests/outputs/datasets/dataset_contract_md_260323.json `
   --output Contract_Review_System/tests/outputs/eval_runs/contract_md_260323 `
-  --participants third_party,final_applied
+  --participants third_party
 ```
 
 ### 评测 `local_llm` 结果并生成三方对照

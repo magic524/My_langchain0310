@@ -49,7 +49,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--participants",
-        default="third_party,final_applied",
+        default="third_party",
         help="Comma-separated participants",
     )
     parser.add_argument("--clause-threshold", type=float, default=0.33, help="Clause alignment threshold")

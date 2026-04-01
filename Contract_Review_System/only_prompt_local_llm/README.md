@@ -10,6 +10,7 @@
 - 构建本项目需要的数据集视图
 - 调用本地模型生成结构化风险点
 - 写出 `dataset_with_local_llm.json`
+- 支持输出纯生产结果 `local_llm_result.json`
 - 写出 `local_llm_predictions.json`
 - 导出原合同批注版 Word 文档
 
@@ -153,6 +154,7 @@ python Contract_Review_System/only_prompt_local_llm/main.py `
 
 - `dataset_from_word2md.json`
 - `dataset_with_local_llm.json`
+- `local_llm_result.json`
 - `local_llm_predictions.json`
 - `pipeline_summary.json`
 - `原合同批注版_local_llm/`

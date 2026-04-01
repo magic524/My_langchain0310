@@ -271,7 +271,7 @@ def evaluate_dataset(
     """运行完整评估。"""
 
     dataset_meta, dataset_warnings, contracts = load_dataset(dataset_path)
-    participants = participants or ["third_party", "final_applied"]
+    participants = participants or ["third_party"]
 
     warnings = list(dataset_warnings)
     by_key: dict[tuple[str, str], list[ParticipantPolicyMetrics]] = {}

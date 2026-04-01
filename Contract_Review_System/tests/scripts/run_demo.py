@@ -33,7 +33,7 @@ def main() -> None:
     ).resolve()
     build_dataset(PROJECT_ROOT, args.run_id, dataset_path)
 
-    payload = evaluate_dataset(dataset_path, participants=["third_party", "final_applied"])
+    payload = evaluate_dataset(dataset_path, participants=["third_party"])
     output_dir = (
         PROJECT_ROOT
         / "Contract_Review_System"

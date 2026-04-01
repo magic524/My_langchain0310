@@ -96,8 +96,6 @@ def build_dataset(
             "adoption_doc": _safe_source_path(_meta_path(adoption_md)) if adoption_md else "",
             "third_party_md": "",
             "third_party_doc": "",
-            "final_applied_md": "",
-            "final_applied_doc": "",
         }
 
         clauses = []
@@ -114,8 +112,8 @@ def build_dataset(
         else:
             warnings.append(f"{contract_id}: 采纳情况说明 markdown 缺失")
 
-        participants: dict[str, list[Any]] = {"third_party": [], "final_applied": []}
-        for participant in ("third_party", "final_applied"):
+        participants: dict[str, list[Any]] = {"third_party": []}
+        for participant in ("third_party",):
             selected = select_participant_markdown(contract_dir, participant)
             if selected is None:
                 warnings.append(f"{contract_id}: {participant} markdown 缺失")

@@ -671,16 +671,37 @@ def resolve_meta_path(contract: dict[str, Any]) -> Path:
     return original_md.with_name("meta.json")
 
 
-def export_local_llm_comment_docs(dataset_path: Path, output_dir: Path) -> dict[str, Any]:
-    """Generate original-contract comment docs from a dataset with local LLM outputs."""
+def _load_contracts_with_local_risks(result_path: Path) -> list[dict[str, Any]]:
+    """Load contracts from either legacy dataset output or pure local result output."""
 
-    dataset_payload = json.loads(dataset_path.read_text(encoding="utf-8"))
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+    contracts = payload.get("contracts", [])
+    if not isinstance(contracts, list):
+        msg = f"`contracts` must be a list: {result_path}"
+        raise ValueError(msg)
+
+    normalized_contracts: list[dict[str, Any]] = []
+    for contract in contracts:
+        if not isinstance(contract, dict):
+            continue
+        normalized = dict(contract)
+        local_risks = contract.get("local_llm_risks")
+        if local_risks is None:
+            local_risks = list((contract.get("participants") or {}).get("local_llm") or [])
+        normalized["local_llm_risks"] = list(local_risks or [])
+        normalized_contracts.append(normalized)
+    return normalized_contracts
+
+
+def export_local_llm_comment_docs(result_path: Path, output_dir: Path) -> dict[str, Any]:
+    """Generate original-contract comment docs from local LLM JSON output."""
+
     output_dir.mkdir(parents=True, exist_ok=True)
 
     contracts_summary: list[dict[str, Any]] = []
     markdown_lines = ["# 本地模型原合同批注导出", ""]
 
-    for contract in dataset_payload.get("contracts", []):
+    for contract in _load_contracts_with_local_risks(result_path):
         contract_id = str(contract.get("contract_id", "")).strip()
         if not contract_id:
             continue
@@ -689,7 +710,7 @@ def export_local_llm_comment_docs(dataset_path: Path, output_dir: Path) -> dict[
         meta_path = resolve_meta_path(contract)
         safe_name = contract_id.replace("/", "_").replace("\\", "_").replace(":", "_")
         output_docx = output_dir / f"{safe_name}_本地模型批注版.docx"
-        local_risks = list((contract.get("participants") or {}).get("local_llm") or [])
+        local_risks = list(contract.get("local_llm_risks") or [])
         comment_summary = annotate_docx_with_comments(
             source_docx,
             output_docx,
@@ -732,7 +753,7 @@ def export_local_llm_comment_docs(dataset_path: Path, output_dir: Path) -> dict[
             )
 
     summary_payload = {
-        "dataset_path": str(dataset_path),
+        "result_path": str(result_path),
         "generated_at": datetime.now().isoformat(),
         "output_dir": str(output_dir),
         "contracts": contracts_summary,

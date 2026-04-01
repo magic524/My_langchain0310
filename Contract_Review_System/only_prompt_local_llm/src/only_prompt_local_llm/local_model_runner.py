@@ -4,6 +4,7 @@ import json
 import sys
 from copy import deepcopy
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -19,8 +20,9 @@ from Contract_Review_System.common.local_llm_client import (
     post_chat_request,
 )
 
+from .clause_parser import extract_clause_units
 from .dataset_builder import build_dataset
-from .review_types import RiskItem
+from .review_types import LocalLlmContractResult, LocalLlmResultPayload, RiskItem
 
 
 SYSTEM_PROMPT = """你是合同审查助手。
@@ -323,6 +325,101 @@ def load_dataset_payload(dataset_path: Path) -> dict[str, Any]:
     return json.loads(dataset_path.read_text(encoding="utf-8"))
 
 
+def load_local_llm_result(result_path: Path) -> dict[str, Any]:
+    """Load a pure local LLM result payload from disk."""
+
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        msg = f"local_llm_result root must be a JSON object: {result_path}"
+        raise ValueError(msg)
+    return payload
+
+
+def _sanitize_filename(value: str) -> str:
+    """Return a filesystem-safe contract identifier."""
+
+    return value.replace("/", "_").replace("\\", "_").replace(":", "_").strip() or "contract"
+
+
+def run_local_review_on_markdown(
+    contract_id: str,
+    contract_text: str,
+    runtime: RuntimeConfig,
+    *,
+    raw_path: Path | None = None,
+    debug_path: Path | None = None,
+    reuse_raw_response: bool = False,
+) -> tuple[list[RiskItem], str]:
+    """Run local LLM review for one Markdown contract."""
+
+    if reuse_raw_response and raw_path is not None and raw_path.exists():
+        raw_text = raw_path.read_text(encoding="utf-8")
+    else:
+        prompt = USER_PROMPT_TEMPLATE.format(contract_text=contract_text)
+        raw_text = send_chat(
+            runtime,
+            [
+                ("system", SYSTEM_PROMPT),
+                ("user", prompt),
+            ],
+            debug_path=debug_path,
+        )
+        if raw_path is not None:
+            raw_path.parent.mkdir(parents=True, exist_ok=True)
+            raw_path.write_text(raw_text, encoding="utf-8")
+    return parse_local_risks(contract_id, raw_text), raw_text
+
+
+def build_local_llm_contract_result(
+    contract_id: str,
+    contract_text: str,
+    source_files: dict[str, str],
+    risks: list[RiskItem],
+    *,
+    raw_response_path: str = "",
+) -> LocalLlmContractResult:
+    """Build a single-contract production result payload."""
+
+    clauses = extract_clause_units(contract_id, contract_text) if contract_text else []
+    return LocalLlmContractResult(
+        contract_id=contract_id,
+        source_files={str(key): str(value) for key, value in source_files.items()},
+        full_contract_text=contract_text,
+        clauses=clauses,
+        local_llm_risks=risks,
+        raw_response_path=raw_response_path,
+    )
+
+
+def write_local_llm_result(
+    result_path: Path,
+    payload: LocalLlmResultPayload,
+) -> Path:
+    """Persist the pure local LLM result payload."""
+
+    serialized = {
+        "meta": payload.meta,
+        "warnings": payload.warnings,
+        "contracts": [
+            {
+                "contract_id": contract.contract_id,
+                "source_files": contract.source_files,
+                "full_contract_text": contract.full_contract_text,
+                "clauses": [asdict(item) for item in contract.clauses],
+                "local_llm_risks": [asdict(item) for item in contract.local_llm_risks],
+                "raw_response_path": contract.raw_response_path,
+            }
+            for contract in payload.contracts
+        ],
+    }
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    result_path.write_text(
+        json.dumps(serialized, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return result_path
+
+
 def filter_contracts(
     dataset_payload: dict[str, Any],
     *,
@@ -434,5 +531,94 @@ def run_local_prediction(
         "output_dir": str(output_dir),
         "dataset_source_path": str(dataset_source_path),
         "dataset_path": str(derived_dataset_path),
+        "prediction_path": str(prediction_path),
+    }
+
+
+def run_local_review_on_dataset(
+    runtime: RuntimeConfig,
+    dataset_payload: dict[str, Any],
+    *,
+    output_dir: Path,
+    run_id: str,
+    reuse_raw_responses: bool = False,
+    contract_filter: str | None = None,
+) -> dict[str, str]:
+    """Run local review from an already prepared dataset payload."""
+
+    output_dir = output_dir.resolve()
+    output_dir.mkdir(parents=True, exist_ok=True)
+    dataset_payload = filter_contracts(dataset_payload, contract_filter=contract_filter)
+
+    raw_dir = output_dir / "raw_responses"
+    debug_dir = output_dir / "debug_requests"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    debug_dir.mkdir(parents=True, exist_ok=True)
+
+    local_prediction_dump: list[dict[str, Any]] = []
+    warnings: list[str] = []
+    contracts_result: list[LocalLlmContractResult] = []
+
+    for contract in dataset_payload.get("contracts", []):
+        if not isinstance(contract, dict):
+            continue
+        contract_id = str(contract.get("contract_id", "")).strip()
+        contract_text = str(contract.get("full_contract_text", "")).strip()
+        source_files = {
+            str(key): str(value)
+            for key, value in (contract.get("source_files") or {}).items()
+            if isinstance(key, str)
+        }
+        if not contract_id or not contract_text:
+            warnings.append(f"Skipped contract with missing id or Markdown text: {contract_id or '<empty>'}")
+            continue
+
+        safe_contract_id = _sanitize_filename(contract_id)
+        raw_path = raw_dir / f"{safe_contract_id}.txt"
+        debug_path = debug_dir / f"{safe_contract_id}.request.json"
+        risks, _ = run_local_review_on_markdown(
+            contract_id,
+            contract_text,
+            runtime,
+            raw_path=raw_path,
+            debug_path=debug_path,
+            reuse_raw_response=reuse_raw_responses,
+        )
+        contracts_result.append(
+            build_local_llm_contract_result(
+                contract_id,
+                contract_text,
+                source_files,
+                risks,
+                raw_response_path=str(raw_path),
+            )
+        )
+        local_prediction_dump.append(
+            {
+                "contract_id": contract_id,
+                "risk_count": len(risks),
+                "risks": [asdict(item) for item in risks],
+            }
+        )
+
+    prediction_path = output_dir / "local_llm_predictions.json"
+    prediction_path.write_text(
+        json.dumps(local_prediction_dump, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    result_payload = LocalLlmResultPayload(
+        meta={
+            "generated_at": datetime.now().isoformat(),
+            "run_id": run_id,
+            "contract_count": len(contracts_result),
+        },
+        warnings=warnings,
+        contracts=contracts_result,
+    )
+    result_path = write_local_llm_result(output_dir / "local_llm_result.json", result_payload)
+    return {
+        "output_dir": str(output_dir),
+        "result_path": str(result_path),
         "prediction_path": str(prediction_path),
     }

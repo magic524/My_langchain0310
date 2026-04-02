@@ -142,10 +142,17 @@ def test_run_contract_review_pipeline_generates_result(monkeypatch, tmp_path: Pa
         runtime=runtime,
         pipeline_output_dir=pipeline_output_dir,
         word2md_output_root=word2md_output_root,
+        review_stance="party_a",
+        extra_user_instruction="重点关注付款和违约责任。",
     )
 
     result_payload = json.loads(Path(result["local_llm_result_path"]).read_text(encoding="utf-8"))
     assert result_payload["meta"]["run_name"] == "demo-run"
+    assert result_payload["meta"]["review_stance"] == "party_a"
+    assert result_payload["meta"]["extra_user_instruction"] == "重点关注付款和违约责任。"
     assert result_payload["contracts"][0]["source_files"]["original_doc"] == str(input_path)
     assert Path(result["comment_output_dir"]).exists()
     assert Path(result["log_path"]).exists()
+    summary_payload = json.loads(Path(result["summary_path"]).read_text(encoding="utf-8"))
+    assert summary_payload["review_stance"] == "party_a"
+    assert summary_payload["extra_user_instruction"] == "重点关注付款和违约责任。"

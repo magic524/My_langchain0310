@@ -7,7 +7,7 @@ import shutil
 from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from Contract_Review_System.common.local_llm_client import RuntimeConfig
 from Contract_Review_System.only_prompt_local_llm.src.only_prompt_local_llm.local_model_runner import (
@@ -34,11 +34,24 @@ def _write_json(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def _append_log(log_path: Path, message: str) -> None:
+ProgressCallback = Callable[[int, str], None]
+LogCallback = Callable[[str], None]
+
+
+def _append_log(log_path: Path, message: str, *, log_callback: LogCallback | None = None) -> str:
     timestamp = datetime.now().strftime("%H:%M:%S")
+    rendered = f"{timestamp} {message}"
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("a", encoding="utf-8") as handle:
-        handle.write(f"{timestamp} {message}\n")
+        handle.write(f"{rendered}\n")
+    if log_callback is not None:
+        log_callback(rendered)
+    return rendered
+
+
+def _report_progress(progress_callback: ProgressCallback | None, value: int, message: str) -> None:
+    if progress_callback is not None:
+        progress_callback(value, message)
 
 
 def _sanitize_output_name(value: str) -> str:
@@ -102,6 +115,20 @@ def _resolve_input_mode(input_value: str) -> tuple[str | None, str | None]:
     return None, str(resolved)
 
 
+def _extract_primary_comment_file(comment_summary: dict[str, Any]) -> str:
+    contracts = comment_summary.get("contracts", [])
+    if not isinstance(contracts, list):
+        return ""
+
+    for contract_summary in contracts:
+        if not isinstance(contract_summary, dict):
+            continue
+        output_docx = str(contract_summary.get("output_docx", "")).strip()
+        if output_docx:
+            return output_docx
+    return ""
+
+
 def _build_contract_result(
     result: dict[str, Any],
     runtime: RuntimeConfig,
@@ -109,6 +136,8 @@ def _build_contract_result(
     raw_dir: Path,
     debug_dir: Path,
     reuse_raw_responses: bool,
+    review_stance: str | None,
+    extra_user_instruction: str,
 ) -> tuple[dict[str, Any], list[str]]:
     warnings: list[str] = []
     contract_id = str(result.get("sample_id", "")).strip()
@@ -134,6 +163,8 @@ def _build_contract_result(
         raw_path=raw_path,
         debug_path=debug_path,
         reuse_raw_response=reuse_raw_responses,
+        review_stance=review_stance,
+        extra_user_instruction=extra_user_instruction,
     )
 
     contract_result = build_local_llm_contract_result(
@@ -202,6 +233,10 @@ def run_contract_review_pipeline(
     recursive: bool = False,
     device: str = "cpu",
     reuse_raw_responses: bool = False,
+    review_stance: str | None = None,
+    extra_user_instruction: str = "",
+    progress_callback: ProgressCallback | None = None,
+    log_callback: LogCallback | None = None,
 ) -> dict[str, str]:
     """Run the production review pipeline and write all output artifacts."""
 
@@ -209,14 +244,31 @@ def run_contract_review_pipeline(
     pipeline_output_dir.mkdir(parents=True, exist_ok=True)
     artifact_dir = pipeline_output_dir / "_artifacts"
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    log_path = artifact_dir / "pipeline.log"
+    log_path = pipeline_output_dir / "pipeline.log"
+    summary_path = pipeline_output_dir / "pipeline_summary.json"
+    raw_dir = pipeline_output_dir / "raw_responses"
+    debug_dir = pipeline_output_dir / "debug_requests"
+    comment_output_dir = pipeline_output_dir / "原合同批注版_local_llm"
 
-    _append_log(log_path, f"run started: {run_name}")
-    _append_log(log_path, f"input: {input_value}")
+    _report_progress(progress_callback, 10, "输入校验")
+    _append_log(log_path, f"任务开始：{run_name}", log_callback=log_callback)
+    _append_log(log_path, f"输入文件：{resolve_path(input_value)}", log_callback=log_callback)
+    _append_log(
+        log_path,
+        f"审查立场：{(review_stance or '').strip().lower() or 'default'}",
+        log_callback=log_callback,
+    )
+    _append_log(
+        log_path,
+        f"额外提示词：{'有' if extra_user_instruction.strip() else '无'}",
+        log_callback=log_callback,
+    )
 
     input_file, input_dir = _resolve_input_mode(input_value)
     items = collect_sources(input_file, input_dir, recursive)
-    _append_log(log_path, f"word2md items: {len(items)}")
+    _append_log(log_path, f"待处理合同数：{len(items)}", log_callback=log_callback)
+    _report_progress(progress_callback, 30, "执行 word2md")
+    _append_log(log_path, "阶段开始：word2md", log_callback=log_callback)
 
     results, word2md_summary_path = run_batch(
         items,
@@ -226,18 +278,22 @@ def run_contract_review_pipeline(
         False,
         [word2md_output_root.resolve()],
     )
-    _append_log(log_path, f"word2md summary: {word2md_summary_path}")
+    _append_log(log_path, f"word2md 摘要：{word2md_summary_path}", log_callback=log_callback)
 
     successful_results = [result for result in results if result.get("status") == "ok"]
     failed_results = [result for result in results if result.get("status") != "ok"]
     for failed in failed_results:
-        _append_log(log_path, f"word2md failed: {failed.get('sample_id', '')} {failed.get('reason', '')}")
+        _append_log(
+            log_path,
+            f"word2md 失败：{failed.get('sample_id', '')} {failed.get('reason', '')}",
+            log_callback=log_callback,
+        )
     if not successful_results:
         msg = "No successful word2md outputs were produced."
         raise RuntimeError(msg)
 
-    raw_dir = artifact_dir / "raw_responses"
-    debug_dir = artifact_dir / "debug_requests"
+    _report_progress(progress_callback, 65, "执行 only_prompt_local_llm")
+    _append_log(log_path, "阶段开始：only_prompt_local_llm", log_callback=log_callback)
     warnings: list[str] = []
     contracts: list[dict[str, Any]] = []
     prediction_rows: list[dict[str, Any]] = []
@@ -248,6 +304,8 @@ def run_contract_review_pipeline(
             raw_dir=raw_dir,
             debug_dir=debug_dir,
             reuse_raw_responses=reuse_raw_responses,
+            review_stance=review_stance,
+            extra_user_instruction=extra_user_instruction,
         )
         warnings.extend(contract_warnings)
         contracts.append(contract_payload["contract"])
@@ -260,7 +318,8 @@ def run_contract_review_pipeline(
         )
         _append_log(
             log_path,
-            f"local llm completed: {contract_payload['contract']['contract_id']} risks={contract_payload['risk_count']}",
+            f"本地模型完成：{contract_payload['contract']['contract_id']} 风险点={contract_payload['risk_count']}",
+            log_callback=log_callback,
         )
 
     local_llm_result_payload = {
@@ -271,6 +330,8 @@ def run_contract_review_pipeline(
             "word2md_run_root": str(word2md_summary_path.parent),
             "word2md_summary_path": str(word2md_summary_path),
             "contract_count": len(contracts),
+            "review_stance": (review_stance or "").strip().lower(),
+            "extra_user_instruction": extra_user_instruction.strip(),
         },
         "warnings": warnings,
         "contracts": contracts,
@@ -278,20 +339,19 @@ def run_contract_review_pipeline(
     local_llm_result_path = pipeline_output_dir / "local_llm_result.json"
     _write_json(local_llm_result_path, local_llm_result_payload)
 
-    prediction_path = artifact_dir / "local_llm_predictions.json"
+    prediction_path = pipeline_output_dir / "local_llm_predictions.json"
     prediction_path.write_text(
         json.dumps(prediction_rows, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
-    artifact_comment_dir = artifact_dir / "comment_export"
-    comment_summary = export_local_llm_comment_docs(local_llm_result_path, artifact_comment_dir)
-    promoted_comment_files = _promote_comment_docs(
-        pipeline_output_dir,
-        comment_summary,
-        artifact_comment_dir=artifact_comment_dir,
-    )
-    _append_log(log_path, f"comment export detail: {artifact_comment_dir}")
+    _report_progress(progress_callback, 90, "导出批注版 Word")
+    _append_log(log_path, "阶段开始：批注导出", log_callback=log_callback)
+    comment_summary = export_local_llm_comment_docs(local_llm_result_path, comment_output_dir)
+    primary_comment_file = _extract_primary_comment_file(comment_summary)
+    _append_log(log_path, f"批注输出目录：{comment_output_dir}", log_callback=log_callback)
+    if primary_comment_file:
+        _append_log(log_path, f"批注版 Word：{primary_comment_file}", log_callback=log_callback)
 
     summary_payload = {
         "run_name": run_name,
@@ -301,25 +361,28 @@ def run_contract_review_pipeline(
         "word2md_summary_path": str(word2md_summary_path),
         "local_llm_result_path": str(local_llm_result_path),
         "prediction_path": str(prediction_path),
-        "comment_output_dir": str(pipeline_output_dir),
-        "comment_files": promoted_comment_files,
+        "comment_output_dir": str(comment_output_dir),
+        "primary_comment_file": primary_comment_file,
         "log_path": str(log_path),
         "artifact_dir": str(artifact_dir),
         "successful_contracts": len(successful_results),
         "failed_contracts": len(failed_results),
         "warnings": warnings,
+        "review_stance": (review_stance or "").strip().lower(),
+        "extra_user_instruction": extra_user_instruction.strip(),
     }
-    summary_path = artifact_dir / "pipeline_summary.json"
     _write_json(summary_path, summary_payload)
     guide_path = _write_artifact_guide(artifact_dir)
-    _append_log(log_path, f"run completed: {summary_path}")
+    _report_progress(progress_callback, 100, "完成")
+    _append_log(log_path, f"任务完成：{summary_path}", log_callback=log_callback)
 
     return {
         "pipeline_output_dir": str(pipeline_output_dir),
         "local_llm_result_path": str(local_llm_result_path),
         "prediction_path": str(prediction_path),
-        "comment_output_dir": str(pipeline_output_dir),
+        "comment_output_dir": str(comment_output_dir),
         "summary_path": str(summary_path),
         "log_path": str(log_path),
         "artifact_guide_path": str(guide_path),
+        "primary_comment_file": primary_comment_file,
     }

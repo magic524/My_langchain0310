@@ -68,6 +68,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--device", default="cpu", help="Docling 推理设备，默认 `cpu`。")
     parser.add_argument("--reuse-raw-responses", action="store_true", help="复用已有 raw_responses。")
+    parser.add_argument(
+        "--review-stance",
+        default="",
+        choices=["", "party_a", "party_b"],
+        help="审查立场，可选 `party_a` 或 `party_b`。",
+    )
+    parser.add_argument(
+        "--extra-user-instruction",
+        default="",
+        help="附加审查要求，会拼接到本地模型 prompt 中。",
+    )
     return parser
 
 
@@ -92,8 +103,12 @@ def main() -> None:
         recursive=args.recursive,
         device=args.device,
         reuse_raw_responses=args.reuse_raw_responses,
+        review_stance=args.review_stance or None,
+        extra_user_instruction=args.extra_user_instruction,
     )
 
     print(f"pipeline output: {result['pipeline_output_dir']}")
     print(f"local llm result: {result['local_llm_result_path']}")
     print(f"comment docs: {result['comment_output_dir']}")
+    if result.get("primary_comment_file"):
+        print(f"comment file: {result['primary_comment_file']}")

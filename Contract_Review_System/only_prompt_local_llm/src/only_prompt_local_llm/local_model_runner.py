@@ -22,7 +22,12 @@ from Contract_Review_System.common.local_llm_client import (
 
 from .clause_parser import extract_clause_units
 from .dataset_builder import build_dataset
-from .review_types import LocalLlmContractResult, LocalLlmResultPayload, RiskItem
+from .review_types import (
+    LocalLlmContractResult,
+    LocalLlmResultPayload,
+    ReviewPromptContext,
+    RiskItem,
+)
 
 
 SYSTEM_PROMPT = """你是合同审查助手。
@@ -62,6 +67,81 @@ USER_PROMPT_TEMPLATE = """请审查下面这份合同全文，并找出风险点
 合同全文如下：
 {contract_text}
 """
+
+
+JSON_OUTPUT_INSTRUCTIONS = """输出格式必须是：
+{
+  "risks": [
+    {
+      "title": "风险标题",
+      "clause_text": "对应的合同原文片段",
+      "explanation": "风险原因或后果",
+      "suggestion": "修改建议"
+    }
+  ]
+}
+
+注意：
+- 这是整份合同全文输入，不要按段落逐段回答。
+- `title` 要简洁明确。
+- `clause_text` 尽量摘录原合同中的关键条款原文。
+- `suggestion` 不要只写“建议完善”，要尽量写具体。
+"""
+
+
+def normalize_review_prompt_context(
+    review_stance: str | None = None,
+    extra_user_instruction: str = "",
+) -> ReviewPromptContext:
+    """Normalize optional prompt preferences for local review."""
+
+    normalized_stance = (review_stance or "").strip().lower()
+    if normalized_stance not in {"", "party_a", "party_b"}:
+        msg = f"Unsupported review_stance: {review_stance}"
+        raise ValueError(msg)
+
+    return ReviewPromptContext(
+        review_stance=normalized_stance,
+        extra_user_instruction=extra_user_instruction.strip(),
+    )
+
+
+def build_review_messages(
+    contract_text: str,
+    *,
+    review_stance: str | None = None,
+    extra_user_instruction: str = "",
+) -> tuple[list[tuple[str, str]], ReviewPromptContext]:
+    """Build prompt messages for one contract review request."""
+
+    prompt_context = normalize_review_prompt_context(
+        review_stance=review_stance,
+        extra_user_instruction=extra_user_instruction,
+    )
+
+    sections = [
+        "请审查下面这份合同全文，并找出风险点。",
+        JSON_OUTPUT_INSTRUCTIONS,
+    ]
+    if prompt_context.review_stance == "party_a":
+        sections.append(
+            "审查立场：本次审查需要优先站在甲方的利益保护和风险控制角度提出解释与修改建议，"
+            "但仍需识别合同中的主要风险点，不要只关注甲方专属条款。"
+        )
+    elif prompt_context.review_stance == "party_b":
+        sections.append(
+            "审查立场：本次审查需要优先站在乙方的利益保护和风险控制角度提出解释与修改建议，"
+            "但仍需识别合同中的主要风险点，不要只关注乙方专属条款。"
+        )
+
+    if prompt_context.extra_user_instruction:
+        sections.append(
+            "用户补充要求：请在不破坏上述 JSON 输出格式要求的前提下，额外遵循以下审查要求：\n"
+            f"{prompt_context.extra_user_instruction}"
+        )
+
+    sections.append(f"合同全文如下：\n{contract_text}")
+    return [("system", SYSTEM_PROMPT), ("user", "\n\n".join(sections))], prompt_context
 
 
 def send_chat_via_langchain(runtime: RuntimeConfig, messages: list[tuple[str, str]]) -> str:
@@ -126,19 +206,28 @@ def sanitize_payload_for_debug(payload: dict[str, Any]) -> dict[str, Any]:
     return sanitized
 
 
-def write_debug_payload(debug_path: Path, payload: dict[str, Any], *, note: str) -> None:
+def write_debug_payload(
+    debug_path: Path,
+    payload: dict[str, Any],
+    *,
+    note: str,
+    prompt_context: ReviewPromptContext | None = None,
+) -> None:
     """Persist a sanitized request for troubleshooting."""
+
+    debug_payload: dict[str, Any] = {
+        "note": note,
+        "request": sanitize_payload_for_debug(payload),
+    }
+    if prompt_context is not None:
+        debug_payload["prompt_context"] = {
+            "review_stance": prompt_context.review_stance,
+            "extra_user_instruction": prompt_context.extra_user_instruction,
+        }
 
     debug_path.parent.mkdir(parents=True, exist_ok=True)
     debug_path.write_text(
-        json.dumps(
-            {
-                "note": note,
-                "request": sanitize_payload_for_debug(payload),
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
+        json.dumps(debug_payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
 
@@ -148,12 +237,18 @@ def send_chat(
     messages: list[tuple[str, str]],
     *,
     debug_path: Path | None = None,
+    prompt_context: ReviewPromptContext | None = None,
 ) -> str:
     """Send a local-model request with a small fallback chain."""
 
     primary_payload = build_payload(runtime, messages, extra_body=runtime.extra_body)
     if debug_path is not None:
-        write_debug_payload(debug_path, primary_payload, note="primary_request")
+        write_debug_payload(
+            debug_path,
+            primary_payload,
+            note="primary_request",
+            prompt_context=prompt_context,
+        )
 
     try:
         return send_chat_via_langchain(runtime, messages)
@@ -169,6 +264,7 @@ def send_chat(
                 debug_path,
                 fallback_payload,
                 note="fallback_request_without_extra_body",
+                prompt_context=prompt_context,
             )
         try:
             fallback_runtime = RuntimeConfig(
@@ -349,20 +445,24 @@ def run_local_review_on_markdown(
     raw_path: Path | None = None,
     debug_path: Path | None = None,
     reuse_raw_response: bool = False,
+    review_stance: str | None = None,
+    extra_user_instruction: str = "",
 ) -> tuple[list[RiskItem], str]:
     """Run local LLM review for one Markdown contract."""
 
     if reuse_raw_response and raw_path is not None and raw_path.exists():
         raw_text = raw_path.read_text(encoding="utf-8")
     else:
-        prompt = USER_PROMPT_TEMPLATE.format(contract_text=contract_text)
+        messages, prompt_context = build_review_messages(
+            contract_text,
+            review_stance=review_stance,
+            extra_user_instruction=extra_user_instruction,
+        )
         raw_text = send_chat(
             runtime,
-            [
-                ("system", SYSTEM_PROMPT),
-                ("user", prompt),
-            ],
+            messages,
             debug_path=debug_path,
+            prompt_context=prompt_context,
         )
         if raw_path is not None:
             raw_path.parent.mkdir(parents=True, exist_ok=True)
@@ -460,6 +560,8 @@ def run_local_prediction(
     word2md_run_root: Path | None = None,
     reuse_raw_responses: bool = False,
     contract_filter: str | None = None,
+    review_stance: str | None = None,
+    extra_user_instruction: str = "",
 ) -> dict[str, str]:
     """Run local-model review and persist the derived dataset artifacts."""
 
@@ -491,22 +593,19 @@ def run_local_prediction(
             contract.setdefault("participants", {})["local_llm"] = []
             continue
 
-        raw_path = raw_dir / f"{contract_id}.txt"
-        if reuse_raw_responses and raw_path.exists():
-            raw_text = raw_path.read_text(encoding="utf-8")
-        else:
-            prompt = USER_PROMPT_TEMPLATE.format(contract_text=contract_text)
-            raw_text = send_chat(
-                runtime,
-                [
-                    ("system", SYSTEM_PROMPT),
-                    ("user", prompt),
-                ],
-                debug_path=debug_dir / f"{contract_id}.request.json",
-            )
-            raw_path.write_text(raw_text, encoding="utf-8")
-
-        risks = parse_local_risks(contract_id, raw_text)
+        safe_contract_id = _sanitize_filename(contract_id)
+        raw_path = raw_dir / f"{safe_contract_id}.txt"
+        debug_path = debug_dir / f"{safe_contract_id}.request.json"
+        risks, raw_text = run_local_review_on_markdown(
+            contract_id,
+            contract_text,
+            runtime,
+            raw_path=raw_path,
+            debug_path=debug_path,
+            reuse_raw_response=reuse_raw_responses,
+            review_stance=review_stance,
+            extra_user_instruction=extra_user_instruction,
+        )
         contract.setdefault("participants", {})["local_llm"] = [asdict(item) for item in risks]
         local_prediction_dump.append(
             {
@@ -543,6 +642,8 @@ def run_local_review_on_dataset(
     run_id: str,
     reuse_raw_responses: bool = False,
     contract_filter: str | None = None,
+    review_stance: str | None = None,
+    extra_user_instruction: str = "",
 ) -> dict[str, str]:
     """Run local review from an already prepared dataset payload."""
 
@@ -583,6 +684,8 @@ def run_local_review_on_dataset(
             raw_path=raw_path,
             debug_path=debug_path,
             reuse_raw_response=reuse_raw_responses,
+            review_stance=review_stance,
+            extra_user_instruction=extra_user_instruction,
         )
         contracts_result.append(
             build_local_llm_contract_result(
@@ -612,6 +715,8 @@ def run_local_review_on_dataset(
             "generated_at": datetime.now().isoformat(),
             "run_id": run_id,
             "contract_count": len(contracts_result),
+            "review_stance": (review_stance or "").strip().lower(),
+            "extra_user_instruction": extra_user_instruction.strip(),
         },
         warnings=warnings,
         contracts=contracts_result,

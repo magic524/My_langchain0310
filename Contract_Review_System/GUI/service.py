@@ -1,4 +1,8 @@
-"""Service layer for the first PyQt GUI version."""
+"""GUI 第一版的服务层。
+
+该模块负责把 GUI 输入转换成生产流水线可接受的参数，
+并将流水线输出裁剪成 GUI 需要展示的最小结果集。
+"""
 
 from __future__ import annotations
 
@@ -24,7 +28,7 @@ DEFAULT_WORD2MD_OUTPUT_ROOT = REPO_ROOT / "data" / "contract_review_outputs" / "
 
 @dataclass(slots=True)
 class GuiReviewRequest:
-    """User input collected from the GUI."""
+    """GUI 采集到的一次审查请求。"""
 
     input_path: str
     review_stance: str
@@ -33,7 +37,7 @@ class GuiReviewRequest:
 
 @dataclass(slots=True)
 class GuiReviewResult:
-    """Minimal GUI-facing output from one review run."""
+    """一次审查的 GUI 展示结果（精简字段）。"""
 
     pipeline_output_dir: str
     primary_comment_file: str
@@ -43,7 +47,7 @@ class GuiReviewResult:
 
 
 class GuiPipelineService:
-    """Thin adapter from GUI input to the production pipeline."""
+    """将 GUI 输入适配到生产流水线的轻量服务层。"""
 
     def __init__(
         self,
@@ -61,7 +65,7 @@ class GuiPipelineService:
         progress_callback: ProgressCallback | None = None,
         log_callback: LogCallback | None = None,
     ) -> GuiReviewResult:
-        """Run the production pipeline for one GUI request."""
+        """执行一次 GUI 发起的审查任务。"""
 
         input_path = Path(request.input_path).expanduser().resolve()
         if not input_path.exists():
@@ -71,8 +75,11 @@ class GuiPipelineService:
             msg = f"当前 GUI 第一版只支持 doc/docx：{input_path.name}"
             raise ValueError(msg)
 
+        # 每次运行按“文件名”生成默认目录名，并在重名时自动追加序号。
         run_name = self._default_run_name(input_path)
         pipeline_output_dir = self._make_unique_dir(self.output_root / run_name)
+
+        # 复用现有运行时配置加载方式，保证 GUI 与命令行行为一致。
         runtime = load_runtime_config(resolve_runtime_env_path())
 
         result = run_contract_review_pipeline(
@@ -96,11 +103,15 @@ class GuiPipelineService:
 
     @staticmethod
     def _default_run_name(input_path: Path) -> str:
+        """根据输入文件名生成安全的运行目录名。"""
+
         cleaned = "".join(char if char not in '<>:"/\\|?*' else "_" for char in input_path.stem).strip()
         return cleaned.rstrip(".") or "contract_review_run"
 
     @staticmethod
     def _make_unique_dir(base_dir: Path) -> Path:
+        """在目标目录已存在时，返回带递增后缀的新目录路径。"""
+
         if not base_dir.exists():
             return base_dir
 

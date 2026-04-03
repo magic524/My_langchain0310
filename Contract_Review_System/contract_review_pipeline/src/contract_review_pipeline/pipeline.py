@@ -260,7 +260,7 @@ def run_contract_review_pipeline(
     )
     _append_log(
         log_path,
-        f"额外提示词：{'有' if extra_user_instruction.strip() else '无'}",
+        f"备注：{'已填写' if extra_user_instruction.strip() else '未填写'}",
         log_callback=log_callback,
     )
 

@@ -1,4 +1,4 @@
-"""PyQt GUI entrypoints for the contract review system."""
+"""合同审查系统 GUI 对外导出接口。"""
 
 from __future__ import annotations
 

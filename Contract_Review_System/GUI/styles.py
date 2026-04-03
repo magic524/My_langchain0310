@@ -1,8 +1,9 @@
-"""Qt stylesheet for the first GUI version."""
+"""GUI 第一版统一样式表。"""
 
 from __future__ import annotations
 
 
+# 使用单一 QSS 常量集中管理视觉风格，避免样式散落在界面代码中。
 APP_STYLESHEET = """
 QWidget {
     background: #f7f6f3;
@@ -24,6 +25,12 @@ QLineEdit, QTextEdit, QPlainTextEdit, QComboBox {
     border: 1px solid #cfd6dd;
     border-radius: 10px;
     padding: 8px;
+}
+QTextEdit#logView {
+    background: #f2f4f7;
+    border: 1px solid #d5dbe3;
+    color: #2f3a45;
+    font-family: "Consolas", "Microsoft YaHei UI";
 }
 QPushButton {
     background: #2f6f95;

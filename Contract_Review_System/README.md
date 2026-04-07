@@ -16,7 +16,7 @@ Contract_Review_System/
 
 负责格式转换。
 
-- 输入：原始 `doc/docx`
+- 输入：原始 `doc/docx/pdf`
 - 输出：统一结构的 `output.md + meta.json + run_summary.json`
 - 默认输出根目录：`data/contract_review_outputs/word2md`
 
@@ -50,7 +50,7 @@ python Contract_Review_System/word2md/main.py `
 
 说明：
 
-- `--input`：原始合同目录，或单个 `doc/docx` 文件
+- `--input`：原始合同目录，或单个 `doc/docx/pdf` 文件
 - `--output`：本次转换批次名
 
 ### 第二步：如只做传统评测

@@ -12,12 +12,13 @@ def build_parser() -> argparse.ArgumentParser:
     """构建命令行参数解析器。"""
 
     parser = argparse.ArgumentParser(
-        description="将 `.doc/.docx` 合同转换为适合 AI 阅读的 Markdown，并生成配套 JSON 元数据。",
+        description="将 `.doc/.docx/.pdf` 合同转换为适合 AI 阅读的 Markdown，并生成配套 JSON 元数据。",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "常用命令示例：\n"
             "  python main.py --input data/合同数据-2026.3.12 --recursive --output contract_md_260323\n"
             "  python main.py --input data/.../合同.docx --output my_debug_run\n"
+            "  python main.py --input data/.../合同.pdf --output pdf_debug_run\n"
             "  python main.py --input data/合同数据-2026.3.12 --recursive "
             "--output-dir data/contract_review_outputs/word2md\n"
         ),
@@ -25,9 +26,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--input",
         default="",
-        help="统一输入参数。可传单个 `.doc/.docx` 文件，也可传输入目录。",
+        help="统一输入参数。可传单个 `.doc/.docx/.pdf` 文件，也可传输入目录。",
     )
-    parser.add_argument("--input-file", default=None, help="单个 `.doc/.docx` 文件路径。")
+    parser.add_argument("--input-file", default=None, help="单个 `.doc/.docx/.pdf` 文件路径。")
     parser.add_argument(
         "--input-dir",
         default=str(DEFAULT_INPUT_DIR),

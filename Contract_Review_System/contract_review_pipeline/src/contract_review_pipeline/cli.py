@@ -51,7 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the CLI parser for the production review pipeline."""
 
     parser = argparse.ArgumentParser(
-        description="输入 doc/docx，自动完成 word2md、本地模型审查和批注版 Word 导出。"
+        description="输入 doc/docx/pdf，自动完成 word2md、本地模型审查和批注版 Word 导出。"
     )
     parser.add_argument("--input", required=True, help="输入合同文件或目录路径。")
     parser.add_argument("--recursive", action="store_true", help="目录模式下递归扫描子目录。")

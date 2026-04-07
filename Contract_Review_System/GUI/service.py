@@ -71,8 +71,8 @@ class GuiPipelineService:
         if not input_path.exists():
             msg = f"输入文件不存在：{input_path}"
             raise FileNotFoundError(msg)
-        if input_path.suffix.lower() not in {".doc", ".docx"}:
-            msg = f"当前 GUI 第一版只支持 doc/docx：{input_path.name}"
+        if input_path.suffix.lower() not in {".doc", ".docx", ".pdf"}:
+            msg = f"当前 GUI 仅支持 doc/docx/pdf：{input_path.name}"
             raise ValueError(msg)
 
         # 每次运行按“文件名”生成默认目录名，并在重名时自动追加序号。

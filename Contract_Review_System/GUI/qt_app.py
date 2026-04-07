@@ -234,7 +234,7 @@ class ContractReviewMainWindow(QMainWindow):
             self,
             "选择原合同文件",
             str(Path.cwd()),
-            "Word files (*.doc *.docx);;All files (*.*)",
+            "Contract files (*.doc *.docx *.pdf);;All files (*.*)",
         )
         if not file_path:
             return

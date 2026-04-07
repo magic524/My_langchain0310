@@ -75,7 +75,7 @@ def resolve_path(path_str: str) -> Path:
 
 
 def collect_sources(input_file: str | None, input_dir: str | None, recursive: bool) -> list[SourceItem]:
-    """收集待转换的 Word 文件。"""
+    """收集待转换的合同文件。"""
 
     if bool(input_file) == bool(input_dir):
         raise ValueError("必须二选一：`--input-file` 或 `--input-dir`。")
@@ -85,8 +85,8 @@ def collect_sources(input_file: str | None, input_dir: str | None, recursive: bo
         if not path.exists() or not path.is_file():
             raise FileNotFoundError(f"输入文件不存在：{path}")
         file_type = path.suffix.lower().lstrip(".")
-        if file_type not in {"doc", "docx"}:
-            raise ValueError(f"仅支持 `.doc/.docx`，当前文件为：{path}")
+        if file_type not in {"doc", "docx", "pdf"}:
+            raise ValueError(f"仅支持 `.doc/.docx/.pdf`，当前文件为：{path}")
         sample_id = slugify_name(path)
         return [
             SourceItem(
@@ -101,14 +101,14 @@ def collect_sources(input_file: str | None, input_dir: str | None, recursive: bo
     if not source_dir.exists() or not source_dir.is_dir():
         raise FileNotFoundError(f"输入目录不存在：{source_dir}")
 
-    patterns = ["*.doc", "*.docx"] if not recursive else ["**/*.doc", "**/*.docx"]
+    patterns = ["*.doc", "*.docx", "*.pdf"] if not recursive else ["**/*.doc", "**/*.docx", "**/*.pdf"]
     file_paths: list[Path] = []
     for pattern in patterns:
         file_paths.extend(source_dir.glob(pattern))
 
     candidates = sorted({path.resolve() for path in file_paths if path.is_file() and not path.name.startswith("~$")})
     if not candidates:
-        raise FileNotFoundError(f"目录中未找到 `.doc/.docx` 文件：{source_dir}")
+        raise FileNotFoundError(f"目录中未找到 `.doc/.docx/.pdf` 文件：{source_dir}")
 
     items: list[SourceItem] = []
     for path in candidates:

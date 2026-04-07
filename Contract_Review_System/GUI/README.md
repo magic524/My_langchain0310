@@ -4,7 +4,7 @@
 
 ## 当前目标
 
-- 输入单个原合同 `doc/docx`
+- 输入单个原合同 `doc/docx/pdf`
 - 选择审查立场：甲方 / 乙方
 - 输入额外审查要求
 - 调用 `contract_review_pipeline`
@@ -28,6 +28,7 @@ GUI/
 ```powershell
 conda activate langchain
 pip install PyQt6
+pip install pypdf
 python Contract_Review_System/GUI/main.py
 ```
 

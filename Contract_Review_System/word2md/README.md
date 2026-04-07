@@ -1,6 +1,6 @@
 ﻿# word2md
 
-`word2md` 是合同审查系统的格式转换子项目，负责把 `doc/docx` 合同材料转换为后续评测和模型调用可直接复用的 Markdown 产物。
+`word2md` 是合同审查系统的格式转换子项目，负责把 `doc/docx/pdf` 合同材料转换为后续评测和模型调用可直接复用的 Markdown 产物。
 
 ## 当前目录结构
 
@@ -71,9 +71,12 @@ word2md/
 
 ## 这个子项目负责什么
 
-- 读取原始 `doc/docx` 合同、第三方审查结果、最终审查意见、采纳说明
+- 读取原始 `doc/docx/pdf` 合同、第三方审查结果、最终审查意见、采纳说明
 - 输出结构稳定的 `output.md`
 - 同步输出 `meta.json`，保留源文件路径、批注锚点、样式提示、`.doc -> .docx` 转换信息
+- PDF 默认走 `pypdf` / `PyPDF2` 的本地解析链路，不再依赖 Docling 模型下载
+- 这种方案更适合公司电脑和客户电脑，通常不需要管理员权限，也不依赖 HuggingFace 缓存
+- 当前 PDF 解析重点是“稳定可用”，能保留分页和基础文本结构，但标题层级、表格还原能力弱于模型方案
 - 每次批量运行输出 `run_summary.json`
 
 ## 默认输入输出
@@ -92,6 +95,12 @@ conda activate langchain
 
 ```powershell
 pip install docling
+```
+
+如需处理 `pdf`，还需要安装轻量解析依赖：
+
+```powershell
+pip install pypdf
 ```
 
 ## 常用命令
@@ -127,7 +136,7 @@ python Contract_Review_System/word2md/scripts/main.py `
 
 ## 主要参数
 
-- `--input`：统一输入参数。可传单个 `doc/docx` 文件，也可传输入目录
+- `--input`：统一输入参数。可传单个 `doc/docx/pdf` 文件，也可传输入目录
 - `--output`：统一输出参数，表示本次转换批次名
 - `--recursive`：目录模式下递归扫描子目录
 - `--output-dir`：输出根目录

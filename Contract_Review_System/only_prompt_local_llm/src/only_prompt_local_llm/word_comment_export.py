@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import escape
 
 
 WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
@@ -559,6 +560,232 @@ def _insert_range_markers(paragraphs_by_index: dict[int, ParagraphRecord], match
     end_paragraph.append(_comment_reference_run(comment_id))
 
 
+def _xml_paragraph(text: str, *, style: str | None = None) -> str:
+    escaped_text = escape(text)
+    style_xml = f'<w:pPr><w:pStyle w:val="{style}"/></w:pPr>' if style else ""
+    return f'<w:p>{style_xml}<w:r><w:t xml:space="preserve">{escaped_text}</w:t></w:r></w:p>'
+
+
+def _parse_markdown_table_row(line: str) -> list[str]:
+    stripped = line.strip()
+    if not stripped:
+        return []
+    if stripped.startswith("|"):
+        stripped = stripped[1:]
+    if stripped.endswith("|"):
+        stripped = stripped[:-1]
+    return [cell.strip() for cell in stripped.split("|")]
+
+
+def _is_markdown_table_separator(line: str) -> bool:
+    cells = _parse_markdown_table_row(line)
+    if not cells:
+        return False
+    for cell in cells:
+        raw = cell.replace(":", "").strip()
+        if len(raw) < 3 or set(raw) != {"-"}:
+            return False
+    return True
+
+
+def _xml_table(rows: list[list[str]]) -> str:
+    row_xml: list[str] = []
+    for row in rows:
+        cell_xml = "".join(
+            f'<w:tc><w:tcPr/><w:p><w:r><w:t xml:space="preserve">{escape(cell)}</w:t></w:r></w:p></w:tc>'
+            for cell in row
+        )
+        row_xml.append(f"<w:tr>{cell_xml}</w:tr>")
+    return "<w:tbl><w:tblPr/><w:tblGrid/>" + "".join(row_xml) + "</w:tbl>"
+
+
+def build_docx_from_markdown(markdown_path: Path, destination_docx: Path, *, title: str) -> Path:
+    """根据 Markdown 生成一份可批注的结构化 docx。"""
+
+    markdown_text = markdown_path.read_text(encoding="utf-8")
+    lines = markdown_text.splitlines()
+    blocks: list[str] = [_xml_paragraph(title, style="Heading1")]
+    index = 0
+
+    # PDF 无法直接写回原文批注时，退化为一份结构化审查底稿。
+    while index < len(lines):
+        raw_line = lines[index]
+        stripped = raw_line.strip()
+        if not stripped:
+            index += 1
+            continue
+
+        if stripped.startswith("|") and index + 1 < len(lines) and _is_markdown_table_separator(lines[index + 1]):
+            table_rows = [_parse_markdown_table_row(stripped)]
+            index += 2
+            while index < len(lines) and lines[index].strip().startswith("|"):
+                table_rows.append(_parse_markdown_table_row(lines[index]))
+                index += 1
+            blocks.append(_xml_table(table_rows))
+            continue
+
+        if stripped == "---":
+            blocks.append(_xml_paragraph("----------"))
+            index += 1
+            continue
+
+        heading_match = re.match(r"^(#{1,6})\s+(.*)$", stripped)
+        if heading_match is not None:
+            level = min(len(heading_match.group(1)), 3)
+            blocks.append(_xml_paragraph(heading_match.group(2).strip(), style=f"Heading{level}"))
+            index += 1
+            continue
+
+        text = stripped
+        if stripped.startswith(("- ", "* ")):
+            text = f"• {stripped[2:].strip()}"
+        blocks.append(_xml_paragraph(text))
+        index += 1
+
+    document_xml = "".join(
+        [
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+            '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">',
+            "<w:body>",
+            *blocks,
+            (
+                '<w:sectPr>'
+                '<w:pgSz w:w="11906" w:h="16838"/>'
+                '<w:pgMar w:top="1440" w:right="1800" w:bottom="1440" w:left="1800" '
+                'w:header="851" w:footer="992" w:gutter="0"/>'
+                "</w:sectPr>"
+            ),
+            "</w:body>",
+            "</w:document>",
+        ]
+    )
+    package_rels_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" '
+        'Target="word/document.xml"/>'
+        '<Relationship Id="rId2" '
+        'Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" '
+        'Target="docProps/core.xml"/>'
+        '<Relationship Id="rId3" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" '
+        'Target="docProps/app.xml"/>'
+        "</Relationships>"
+    )
+    document_rels_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" '
+        'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" '
+        'Target="styles.xml"/>'
+        "</Relationships>"
+    )
+    styles_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        '<w:docDefaults>'
+        '<w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="宋体"/>'
+        '<w:sz w:val="22"/></w:rPr></w:rPrDefault>'
+        '<w:pPrDefault><w:pPr/></w:pPrDefault>'
+        '</w:docDefaults>'
+        '<w:style w:type="paragraph" w:default="1" w:styleId="Normal">'
+        '<w:name w:val="Normal"/>'
+        '<w:qFormat/>'
+        '</w:style>'
+        '<w:style w:type="paragraph" w:styleId="Heading1">'
+        '<w:name w:val="heading 1"/>'
+        '<w:basedOn w:val="Normal"/>'
+        '<w:uiPriority w:val="9"/>'
+        '<w:qFormat/>'
+        '<w:rPr><w:b/><w:sz w:val="32"/></w:rPr>'
+        '</w:style>'
+        '<w:style w:type="paragraph" w:styleId="Heading2">'
+        '<w:name w:val="heading 2"/>'
+        '<w:basedOn w:val="Normal"/>'
+        '<w:uiPriority w:val="9"/>'
+        '<w:qFormat/>'
+        '<w:rPr><w:b/><w:sz w:val="28"/></w:rPr>'
+        '</w:style>'
+        '<w:style w:type="paragraph" w:styleId="Heading3">'
+        '<w:name w:val="heading 3"/>'
+        '<w:basedOn w:val="Normal"/>'
+        '<w:uiPriority w:val="9"/>'
+        '<w:qFormat/>'
+        '<w:rPr><w:b/><w:sz w:val="24"/></w:rPr>'
+        '</w:style>'
+        "</w:styles>"
+    )
+    app_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" '
+        'xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">'
+        '<Application>Microsoft Office Word</Application>'
+        '</Properties>'
+    )
+    core_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" '
+        'xmlns:dc="http://purl.org/dc/elements/1.1/" '
+        'xmlns:dcterms="http://purl.org/dc/terms/" '
+        'xmlns:dcmitype="http://purl.org/dc/dcmitype/" '
+        'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">'
+        f"<dc:title>{escape(title)}</dc:title>"
+        "<dc:creator>Contract Review System</dc:creator>"
+        "<cp:lastModifiedBy>Contract Review System</cp:lastModifiedBy>"
+        "</cp:coreProperties>"
+    )
+    content_types_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/docProps/app.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/>'
+        '<Override PartName="/docProps/core.xml" '
+        'ContentType="application/vnd.openxmlformats-package.core-properties+xml"/>'
+        '<Override PartName="/word/document.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+        '<Override PartName="/word/styles.xml" '
+        'ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+        "</Types>"
+    )
+
+    destination_docx.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(destination_docx, "w") as archive:
+        archive.writestr("[Content_Types].xml", content_types_xml)
+        archive.writestr("_rels/.rels", package_rels_xml)
+        archive.writestr("docProps/app.xml", app_xml)
+        archive.writestr("docProps/core.xml", core_xml)
+        archive.writestr("word/document.xml", document_xml)
+        archive.writestr("word/_rels/document.xml.rels", document_rels_xml)
+        archive.writestr("word/styles.xml", styles_xml)
+    return destination_docx
+
+
+def _is_valid_synthesized_docx(docx_path: Path) -> bool:
+    """Check whether a synthesized docx contains the minimum Word package parts."""
+
+    if not docx_path.exists():
+        return False
+    try:
+        with zipfile.ZipFile(docx_path) as archive:
+            names = set(archive.namelist())
+    except zipfile.BadZipFile:
+        return False
+
+    required_parts = {
+        "[Content_Types].xml",
+        "_rels/.rels",
+        "docProps/app.xml",
+        "docProps/core.xml",
+        "word/document.xml",
+        "word/_rels/document.xml.rels",
+        "word/styles.xml",
+    }
+    return required_parts.issubset(names)
+
+
 def annotate_docx_with_comments(
     source_docx: Path,
     destination_docx: Path,
@@ -644,15 +871,28 @@ def annotate_docx_with_comments(
     return summary
 
 
-def resolve_source_docx(contract: dict[str, Any]) -> Path:
-    """Resolve the usable source docx for a contract, converting cached `.doc` when needed."""
+def resolve_source_docx(contract: dict[str, Any], *, fallback_dir: Path | None = None) -> Path:
+    """Resolve the usable source docx for a contract, synthesizing one for PDF when needed."""
 
     source_files = contract.get("source_files") or {}
     original_doc = Path(str(source_files.get("original_doc", "")))
+    original_md = Path(str(source_files.get("original_md", "")))
     if original_doc.suffix.lower() == ".docx":
         return original_doc
 
-    original_md = Path(str(source_files.get("original_md", "")))
+    if original_doc.suffix.lower() == ".pdf":
+        if fallback_dir is None:
+            raise FileNotFoundError("PDF 输入需要提供 `fallback_dir` 以生成可批注的 docx。")
+        safe_name = (str(contract.get("contract_id", "")).strip() or original_doc.stem or "contract").replace("/", "_")
+        safe_name = safe_name.replace("\\", "_").replace(":", "_")
+        synthesized_docx = fallback_dir / f"{safe_name}_pdf结构化审查底稿.docx"
+        should_rebuild = not _is_valid_synthesized_docx(synthesized_docx)
+        if synthesized_docx.exists() and original_md.exists():
+            should_rebuild = should_rebuild or synthesized_docx.stat().st_mtime < original_md.stat().st_mtime
+        if should_rebuild:
+            build_docx_from_markdown(original_md, synthesized_docx, title=f"PDF结构化审查底稿：{original_doc.name}")
+        return synthesized_docx
+
     meta_path = original_md.with_name("meta.json")
     if not meta_path.exists():
         raise FileNotFoundError(f"Missing meta.json for doc conversion lookup: {meta_path}")
@@ -697,6 +937,7 @@ def export_local_llm_comment_docs(result_path: Path, output_dir: Path) -> dict[s
     """Generate original-contract comment docs from local LLM JSON output."""
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    source_cache_dir = output_dir / "_source_docx_cache"
 
     contracts_summary: list[dict[str, Any]] = []
     markdown_lines = ["# 本地模型原合同批注导出", ""]
@@ -706,7 +947,9 @@ def export_local_llm_comment_docs(result_path: Path, output_dir: Path) -> dict[s
         if not contract_id:
             continue
 
-        source_docx = resolve_source_docx(contract)
+        source_files = contract.get("source_files") or {}
+        original_doc = Path(str(source_files.get("original_doc", "")))
+        source_docx = resolve_source_docx(contract, fallback_dir=source_cache_dir)
         meta_path = resolve_meta_path(contract)
         safe_name = contract_id.replace("/", "_").replace("\\", "_").replace(":", "_")
         output_docx = output_dir / f"{safe_name}_本地模型批注版.docx"
@@ -719,9 +962,13 @@ def export_local_llm_comment_docs(result_path: Path, output_dir: Path) -> dict[s
             meta_path=meta_path,
         )
 
+        source_mode = "generated_from_pdf" if original_doc.suffix.lower() == ".pdf" else "original_or_converted_docx"
         contract_summary = {
             "contract_id": contract_id,
+            "original_input": str(original_doc),
             "source_docx": str(source_docx),
+            "source_mode": source_mode,
+            "source_display_name": original_doc.stem or source_docx.stem,
             "output_docx": str(output_docx),
             "risk_count": len(local_risks),
             "comment_count": len(comment_summary),
@@ -733,7 +980,9 @@ def export_local_llm_comment_docs(result_path: Path, output_dir: Path) -> dict[s
             [
                 f"## {contract_id}",
                 "",
-                f"- 原始文档: `{source_docx}`",
+                f"- 原始输入: `{original_doc}`",
+                f"- 批注底稿: `{source_docx}`",
+                f"- 底稿类型: `{source_mode}`",
                 f"- 批注文档: `{output_docx}`",
                 f"- 风险点数量: `{len(local_risks)}`",
                 "",

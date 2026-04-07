@@ -250,3 +250,56 @@ def test_resolve_source_docx_uses_cached_conversion(tmp_path: Path) -> None:
     }
 
     assert resolve_source_docx(contract) == converted
+
+
+def test_resolve_source_docx_builds_fallback_for_pdf(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run" / "contract-pdf"
+    md_dir = run_dir / "1-原合同"
+    md_dir.mkdir(parents=True)
+    original_md = md_dir / "output.md"
+    original_md.write_text("# 总则\n\n| 条款 | 内容 |\n|---|---|\n| 1 | 示例 |\n", encoding="utf-8")
+
+    contract = {
+        "contract_id": "pdf-contract",
+        "source_files": {
+            "original_doc": str(tmp_path / "source.pdf"),
+            "original_md": str(original_md),
+        },
+    }
+    fallback_dir = tmp_path / "fallback_docx"
+    resolved = resolve_source_docx(contract, fallback_dir=fallback_dir)
+
+    assert resolved.exists()
+    assert resolved.suffix.lower() == ".docx"
+    with zipfile.ZipFile(resolved) as archive:
+        assert "_rels/.rels" in archive.namelist()
+        assert "word/styles.xml" in archive.namelist()
+        assert "word/document.xml" in archive.namelist()
+
+
+def test_resolve_source_docx_rebuilds_invalid_cached_pdf_docx(tmp_path: Path) -> None:
+    run_dir = tmp_path / "run" / "contract-pdf"
+    md_dir = run_dir / "1-原合同"
+    md_dir.mkdir(parents=True)
+    original_md = md_dir / "output.md"
+    original_md.write_text("# 标题\n\n正文\n", encoding="utf-8")
+
+    contract = {
+        "contract_id": "pdf-contract",
+        "source_files": {
+            "original_doc": str(tmp_path / "source.pdf"),
+            "original_md": str(original_md),
+        },
+    }
+    fallback_dir = tmp_path / "fallback_docx"
+    fallback_dir.mkdir(parents=True)
+    cached_docx = fallback_dir / "pdf-contract_pdf结构化审查底稿.docx"
+    with zipfile.ZipFile(cached_docx, "w") as archive:
+        archive.writestr("[Content_Types].xml", "broken")
+
+    resolved = resolve_source_docx(contract, fallback_dir=fallback_dir)
+
+    with zipfile.ZipFile(resolved) as archive:
+        assert "_rels/.rels" in archive.namelist()
+        assert "word/styles.xml" in archive.namelist()
+        assert "word/document.xml" in archive.namelist()

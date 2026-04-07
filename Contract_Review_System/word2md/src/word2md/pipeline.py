@@ -3,29 +3,71 @@
 from __future__ import annotations
 
 import json
+import os
 import time
 import traceback
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
-from .common import SourceItem
+from .common import REPO_ROOT, SourceItem
 from .docx_features import (
     extract_docx_comments_with_anchors,
     extract_docx_style_hints,
     extract_docx_visible_paragraphs,
 )
 from .markdown_formatter import inject_inline_annotations, postprocess_legal_markdown, repair_missing_numbered_paragraphs
+from .pdf_fallback import build_fallback_markdown
 from .word_processing import convert_doc_to_docx, prepare_docx_for_docling
 
 
-def import_docling():
+MODEL_CACHE_ROOT = REPO_ROOT / "data" / "contract_review_runtime_cache"
+
+
+def configure_restricted_runtime() -> None:
+    """Use workspace-local model caches and disable symlink-dependent cache layout."""
+
+    huggingface_root = MODEL_CACHE_ROOT / "huggingface"
+    transformers_root = MODEL_CACHE_ROOT / "transformers"
+    for cache_dir in (huggingface_root, transformers_root):
+        cache_dir.mkdir(parents=True, exist_ok=True)
+
+    os.environ.setdefault("HF_HOME", str(huggingface_root))
+    os.environ.setdefault("HF_HUB_CACHE", str(huggingface_root / "hub"))
+    os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(huggingface_root / "hub"))
+    os.environ.setdefault("TRANSFORMERS_CACHE", str(transformers_root))
+    # On restricted Windows devices, requiring symlink privileges breaks first-run downloads.
+    os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS", "1")
+    os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+
+
+def explain_docling_error(raw_error: str) -> str:
+    """Convert low-level PDF conversion errors into user-facing diagnostics."""
+
+    if "WinError 1314" in raw_error or "客户端没有所需的特权" in raw_error:
+        return (
+            "PDF 解析失败：当前电脑限制了模型缓存所需的链接权限。"
+            " 已自动切换到无 symlink 模式；如果仍失败，请检查公司安全策略是否拦截了模型下载或缓存写入。"
+        )
+    if "huggingface" in raw_error.lower():
+        return "PDF 解析失败：Docling 所需模型无法完成下载或缓存，请检查网络、代理或本地缓存目录权限。"
+    return raw_error
+
+
+def import_docling() -> tuple[type[Any], Any, type[Any], type[Any] | None]:
     """延迟导入 Docling，便于给出更明确的环境提示。"""
 
     try:
+        configure_restricted_runtime()
         from docling.datamodel.base_models import InputFormat
         from docling.document_converter import DocumentConverter, WordFormatOption
 
-        return DocumentConverter, InputFormat, WordFormatOption
+        try:
+            from docling.document_converter import PdfFormatOption
+        except ImportError:
+            PdfFormatOption = None
+
+        return DocumentConverter, InputFormat, WordFormatOption, PdfFormatOption
     except ImportError as exc:
         raise RuntimeError(
             "无法导入 docling，请先进入 `langchain` 环境并安装依赖："
@@ -33,20 +75,28 @@ def import_docling():
         ) from exc
 
 
-def run_docling(input_path: Path, device: str = "cpu") -> tuple[object | None, str]:
+def run_docling(input_path: Path, *, file_type: str, device: str = "cpu") -> tuple[object | None, str]:
     """执行 Docling 转换。"""
 
+    del device
+
     try:
-        DocumentConverter, InputFormat, WordFormatOption = import_docling()
-        converter = DocumentConverter(
-            format_options={
-                InputFormat.DOCX: WordFormatOption(),
-            }
-        )
+        DocumentConverter, InputFormat, WordFormatOption, PdfFormatOption = import_docling()
+        format_options: dict[Any, Any] = {
+            InputFormat.DOCX: WordFormatOption(),
+        }
+        if PdfFormatOption is not None and hasattr(InputFormat, "PDF"):
+            format_options[getattr(InputFormat, "PDF")] = PdfFormatOption()
+
+        if file_type == "pdf" and (PdfFormatOption is None or not hasattr(InputFormat, "PDF")):
+            raise RuntimeError("当前安装的 docling 版本未暴露 PDF 转换能力，请升级 docling 后重试。")
+
+        converter = DocumentConverter(format_options=format_options)
         result = converter.convert(str(input_path))
         return result.document, ""
-    except Exception as exc:
-        return None, f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
+    except Exception as exc:  # noqa: BLE001
+        raw_error = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
+        return None, explain_docling_error(raw_error)
 
 
 def export_markdown(document: object, output_dir: Path, apply_postprocess: bool) -> tuple[str, str]:
@@ -62,9 +112,28 @@ def export_markdown(document: object, output_dir: Path, apply_postprocess: bool)
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "output.md").write_text(markdown, encoding="utf-8")
         return "ok", ""
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         traceback.print_exc()
         return "error", str(exc)
+
+
+def export_fallback_markdown(
+    source_path: Path,
+    output_dir: Path,
+    *,
+    apply_postprocess: bool,
+) -> tuple[str, str, dict[str, Any]]:
+    """Export markdown from the lightweight local PDF parser."""
+
+    try:
+        markdown, stats = build_fallback_markdown(source_path)
+        if apply_postprocess:
+            markdown = postprocess_legal_markdown(markdown)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "output.md").write_text(markdown, encoding="utf-8")
+        return "ok", "", stats
+    except Exception as exc:  # noqa: BLE001
+        return "error", str(exc), {}
 
 
 def write_meta(
@@ -73,16 +142,16 @@ def write_meta(
     item: SourceItem,
     device: str,
     elapsed_seconds: float,
-    doc_conversion: dict | None,
-    docx_preprocess: dict | None,
+    doc_conversion: dict[str, Any] | None,
+    docx_preprocess: dict[str, Any] | None,
     md_status: str,
     md_error: str,
     docling_error: str,
-    comment_anchors: list[dict],
-    style_hints: list[dict],
-    inline_stats: dict,
+    comment_anchors: list[dict[str, Any]],
+    style_hints: list[dict[str, Any]],
+    inline_stats: dict[str, int],
 ) -> None:
-    """写出单文件元数据，方便后续评估和追踪问题。"""
+    """写出单文件元数据，方便后续评测和追踪问题。"""
 
     meta = {
         "run_id": run_id,
@@ -103,6 +172,10 @@ def write_meta(
         "inline_injection": inline_stats,
         "output_md": str(output_dir / "output.md") if md_status == "ok" else "",
     }
+    if docx_preprocess:
+        fallback_pdf_parse = docx_preprocess.get("fallback_pdf_parse")
+        if fallback_pdf_parse is not None:
+            meta["fallback_pdf_parse"] = fallback_pdf_parse
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "meta.json").write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -114,8 +187,8 @@ def process_one(
     device: str,
     no_postprocess: bool,
     history_output_roots: list[Path],
-) -> dict:
-    """处理单个 Word 文件并输出 Markdown 与元数据。"""
+) -> dict[str, Any]:
+    """处理单个合同并输出 Markdown 与元数据。"""
 
     output_dir = output_root / run_id / item.output_subdir
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -126,11 +199,11 @@ def process_one(
     print(f"{'=' * 68}")
 
     working_path = item.source_path
-    doc_conversion_info: dict | None = None
-    docx_preprocess_info: dict | None = None
-    comment_anchors: list[dict] = []
-    style_hints: list[dict] = []
-    inline_stats = {
+    doc_conversion_info: dict[str, Any] | None = None
+    docx_preprocess_info: dict[str, Any] | None = None
+    comment_anchors: list[dict[str, Any]] = []
+    style_hints: list[dict[str, Any]] = []
+    inline_stats: dict[str, int] = {
         "comment_matched": 0,
         "comment_unmatched": 0,
         "style_matched": 0,
@@ -187,14 +260,16 @@ def process_one(
         print(f"[预处理] 成功: {method}, {conversion_elapsed}s")
 
     docling_input_path = working_path
+    effective_file_type = item.file_type
     if working_path.suffix.lower() == ".docx":
         docling_input_path, docx_preprocess_info = prepare_docx_for_docling(
             working_path,
             output_dir / "_docling_input",
         )
+        effective_file_type = "docx"
 
     comment_source = working_path if working_path.suffix.lower() == ".docx" else None
-    if comment_source:
+    if comment_source is not None:
         comment_anchors = extract_docx_comments_with_anchors(comment_source)
         style_hints = extract_docx_style_hints(comment_source)
         if comment_anchors:
@@ -202,9 +277,83 @@ def process_one(
         if style_hints:
             print(f"[样式] 抽取到 {len(style_hints)} 条样式提示")
 
-    print(f"[Docling] 转换开始，device={device}")
-    document, docling_error = run_docling(docling_input_path, device=device)
+    if effective_file_type == "pdf":
+        print("[PDF] 转换开始，parser=pypdf/PyPDF2")
+        md_status, md_error, fallback_stats = export_fallback_markdown(
+            item.source_path,
+            output_dir,
+            apply_postprocess=not no_postprocess,
+        )
+        docx_preprocess_info = {
+            **(docx_preprocess_info or {}),
+            "fallback_pdf_parse": {
+                "applied": md_status == "ok",
+                "stats": fallback_stats,
+                "parser": "pypdf_or_pypdf2",
+                "error": md_error,
+            },
+        }
+        if md_status == "ok":
+            elapsed_seconds = round(time.time() - start_time, 2)
+            write_meta(
+                output_dir,
+                run_id,
+                item,
+                device,
+                elapsed_seconds,
+                doc_conversion_info,
+                docx_preprocess_info,
+                "ok",
+                "",
+                "",
+                comment_anchors,
+                style_hints,
+                inline_stats,
+            )
+            print(f"[成功] PDF output.md, elapsed={elapsed_seconds}s")
+            return {
+                "sample_id": item.sample_id,
+                "source": str(item.source_path),
+                "output_subdir": item.output_subdir.as_posix(),
+                "status": "ok",
+                "output_md": str(output_dir / "output.md"),
+                "comment_anchor_count": len(comment_anchors),
+                "style_hint_count": len(style_hints),
+                "inline_injection": inline_stats,
+                "elapsed_seconds": elapsed_seconds,
+                "fallback_mode": "pdf_text_only",
+            }
+
+        elapsed_seconds = round(time.time() - start_time, 2)
+        write_meta(
+            output_dir,
+            run_id,
+            item,
+            device,
+            elapsed_seconds,
+            doc_conversion_info,
+            docx_preprocess_info,
+            "error",
+            md_error,
+            "",
+            comment_anchors,
+            style_hints,
+            inline_stats,
+        )
+        print(f"[失败] PDF parser error: {md_error[:200]}")
+        return {
+            "sample_id": item.sample_id,
+            "source": str(item.source_path),
+            "output_subdir": item.output_subdir.as_posix(),
+            "status": "failed",
+            "reason": "pdf_parse_error",
+            "error_detail": md_error,
+        }
+
+    print(f"[Docling] 转换开始，device={device}, file_type={effective_file_type}")
+    document, docling_error = run_docling(docling_input_path, file_type=effective_file_type, device=device)
     if docling_error:
+
         elapsed_seconds = round(time.time() - start_time, 2)
         write_meta(
             output_dir,
@@ -228,6 +377,7 @@ def process_one(
             "output_subdir": item.output_subdir.as_posix(),
             "status": "failed",
             "reason": "docling_error",
+            "error_detail": docling_error,
         }
 
     print("[导出] 输出 Markdown ...")
@@ -288,10 +438,10 @@ def run_batch(
     device: str,
     no_postprocess: bool,
     history_output_roots: list[Path],
-) -> tuple[list[dict], Path]:
+) -> tuple[list[dict[str, Any]], Path]:
     """批量运行转换并生成汇总文件。"""
 
-    results: list[dict] = []
+    results: list[dict[str, Any]] = []
     for item in items:
         results.append(process_one(item, run_id, output_root, device, no_postprocess, history_output_roots))
 

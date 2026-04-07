@@ -156,3 +156,56 @@ def test_run_contract_review_pipeline_generates_result(monkeypatch, tmp_path: Pa
     summary_payload = json.loads(Path(result["summary_path"]).read_text(encoding="utf-8"))
     assert summary_payload["review_stance"] == "party_a"
     assert summary_payload["extra_user_instruction"] == "重点关注付款和违约责任。"
+
+
+def test_run_contract_review_pipeline_surfaces_word2md_error_detail(monkeypatch, tmp_path: Path) -> None:
+    runtime = RuntimeConfig(
+        model_name="demo",
+        api_key="EMPTY",
+        base_url="http://localhost:8000/v1",
+        temperature=0.0,
+        extra_body=None,
+    )
+    input_path = tmp_path / "demo.pdf"
+    input_path.write_bytes(b"%PDF-1.4\n")
+
+    def fake_run_batch(
+        items: list[object],
+        run_id: str,
+        output_root: Path,
+        device: str,
+        no_postprocess: bool,
+        history_output_roots: list[Path],
+    ) -> tuple[list[dict[str, str]], Path]:
+        summary_path = output_root / run_id / "run_summary.json"
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(json.dumps({"run_id": run_id}, ensure_ascii=False), encoding="utf-8")
+        return (
+            [
+                {
+                    "sample_id": "demo-pdf",
+                    "status": "failed",
+                    "reason": "docling_error",
+                    "error_detail": "PDF 解析失败：当前电脑限制了模型缓存所需的链接权限。",
+                }
+            ],
+            summary_path,
+        )
+
+    monkeypatch.setattr(
+        "Contract_Review_System.contract_review_pipeline.src.contract_review_pipeline.pipeline.run_batch",
+        fake_run_batch,
+    )
+
+    try:
+        run_contract_review_pipeline(
+            input_value=str(input_path),
+            run_name="demo-run",
+            runtime=runtime,
+            pipeline_output_dir=tmp_path / "pipeline_output",
+            word2md_output_root=tmp_path / "word2md_outputs",
+        )
+    except RuntimeError as exc:
+        assert "模型缓存所需的链接权限" in str(exc)
+    else:
+        raise AssertionError("Expected RuntimeError")

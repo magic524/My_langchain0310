@@ -288,8 +288,12 @@ def run_contract_review_pipeline(
             f"word2md 失败：{failed.get('sample_id', '')} {failed.get('reason', '')}",
             log_callback=log_callback,
         )
+        error_detail = str(failed.get("error_detail", "")).strip()
+        if error_detail:
+            _append_log(log_path, f"word2md 详情：{error_detail}", log_callback=log_callback)
     if not successful_results:
-        msg = "No successful word2md outputs were produced."
+        first_error_detail = str(failed_results[0].get("error_detail", "")).strip() if failed_results else ""
+        msg = first_error_detail or "No successful word2md outputs were produced."
         raise RuntimeError(msg)
 
     _report_progress(progress_callback, 65, "执行 only_prompt_local_llm")

@@ -28,7 +28,7 @@ GUI/
 ```powershell
 conda activate langchain
 pip install PyQt6
-pip install pypdf
+pip install pdf2docx
 python Contract_Review_System/GUI/main.py
 ```
 

@@ -880,6 +880,17 @@ def resolve_source_docx(contract: dict[str, Any], *, fallback_dir: Path | None =
     if original_doc.suffix.lower() == ".docx":
         return original_doc
 
+    if original_md.exists():
+        meta_path = original_md.with_name("meta.json")
+        if meta_path.exists():
+            meta_payload = json.loads(meta_path.read_text(encoding="utf-8"))
+            conversion = meta_payload.get("doc_conversion") or {}
+            output_path = conversion.get("output_path")
+            if output_path:
+                converted_docx = Path(str(output_path))
+                if converted_docx.exists():
+                    return converted_docx
+
     if original_doc.suffix.lower() == ".pdf":
         if fallback_dir is None:
             raise FileNotFoundError("PDF 输入需要提供 `fallback_dir` 以生成可批注的 docx。")

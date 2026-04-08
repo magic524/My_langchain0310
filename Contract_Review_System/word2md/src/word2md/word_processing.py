@@ -1,4 +1,4 @@
-"""Word 文件预处理：`.doc -> .docx` 转换与 Docling 输入修复。"""
+"""Word 文件预处理：文档转 `docx` 与 Docling 输入修复。"""
 
 from __future__ import annotations
 
@@ -63,6 +63,76 @@ def try_win32com(doc_path: Path, output_dir: Path) -> Path | None:
         document.Close()
         word.Quit()
         if target_path.exists():
+            return target_path
+    except Exception:
+        pass
+
+    return None
+
+
+def try_pdf2docx(pdf_path: Path, output_dir: Path) -> Path | None:
+    """尝试使用 `pdf2docx` 将 `.pdf` 转为 `.docx`。"""
+
+    target_path = output_dir / f"{pdf_path.stem}.docx"
+
+    try:
+        from pdf2docx import Converter  # type: ignore[import]
+    except ImportError:
+        return None
+
+    converter: object | None = None
+    try:
+        converter = Converter(str(pdf_path.resolve()))
+        convert_method = getattr(converter, "convert")
+        close_method = getattr(converter, "close", None)
+        convert_method(str(target_path.resolve()))
+        if callable(close_method):
+            close_method()
+        if target_path.exists() and detect_word_file_format(target_path) == "docx_package":
+            return target_path
+    except Exception:
+        if callable(getattr(converter, "close", None)):
+            try:
+                converter.close()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+    return None
+
+
+def try_win32com_pdf(pdf_path: Path, output_dir: Path) -> Path | None:
+    """尝试使用 Word COM 将 `.pdf` 另存为 `.docx`。"""
+
+    target_path = output_dir / f"{pdf_path.stem}.docx"
+
+    try:
+        import pythoncom  # type: ignore[import]
+        import win32com.client  # type: ignore[import]
+
+        pythoncom.CoInitialize()
+        word = win32com.client.Dispatch("Word.Application")
+        word.Visible = False
+        word.DisplayAlerts = 0
+        document = word.Documents.Open(str(pdf_path.resolve()), ConfirmConversions=False, ReadOnly=True)
+        document.SaveAs(str(target_path.resolve()), FileFormat=16)
+        document.Close(False)
+        word.Quit()
+        pythoncom.CoUninitialize()
+        if target_path.exists() and detect_word_file_format(target_path) == "docx_package":
+            return target_path
+    except Exception:
+        pass
+
+    try:
+        import comtypes.client  # type: ignore[import]
+
+        word = comtypes.client.CreateObject("Word.Application")
+        word.Visible = False
+        word.DisplayAlerts = 0
+        document = word.Documents.Open(str(pdf_path.resolve()), ConfirmConversions=False, ReadOnly=True)
+        document.SaveAs(str(target_path.resolve()), FileFormat=16)
+        document.Close()
+        word.Quit()
+        if target_path.exists() and detect_word_file_format(target_path) == "docx_package":
             return target_path
     except Exception:
         pass
@@ -179,6 +249,47 @@ def convert_doc_to_docx(
         "LibreOffice (soffice not found or error) "
         "and Word COM (pywin32/comtypes unavailable or Microsoft Word not installed) both unavailable; "
         "no previous converted docx cache found"
+    )
+
+
+def convert_pdf_to_docx(
+    pdf_path: Path,
+    work_dir: Path,
+    *,
+    cache_roots: list[Path] | None = None,
+    output_subdir: Path | None = None,
+    current_run_id: str | None = None,
+) -> tuple[Path | None, str]:
+    """将 `.pdf` 转为 `.docx`，优先复用轻依赖和现有 Office 能力。"""
+
+    work_dir.mkdir(parents=True, exist_ok=True)
+
+    pdf2docx_path = try_pdf2docx(pdf_path, work_dir)
+    if pdf2docx_path:
+        return pdf2docx_path, "pdf2docx"
+
+    win32com_path = try_win32com_pdf(pdf_path, work_dir)
+    if win32com_path:
+        return win32com_path, "word_com_pdf"
+
+    if cache_roots and output_subdir is not None:
+        cached_docx_path, cache_method = reuse_previous_converted_docx(
+            pdf_path,
+            work_dir,
+            cache_roots,
+            output_subdir,
+            current_run_id=current_run_id,
+        )
+        if cached_docx_path:
+            return cached_docx_path, cache_method
+
+    return None, (
+        "all_methods_failed: "
+        "`pdf2docx` unavailable or conversion failed; "
+        "Word COM PDF export unavailable or Microsoft Word not installed; "
+        "no previous converted docx cache found. "
+        "请先在 `langchain` 环境执行 `pip install pdf2docx`，"
+        "或确保本机安装了可自动化调用的 Microsoft Word。"
     )
 
 

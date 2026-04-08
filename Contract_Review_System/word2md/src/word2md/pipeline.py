@@ -17,8 +17,7 @@ from .docx_features import (
     extract_docx_visible_paragraphs,
 )
 from .markdown_formatter import inject_inline_annotations, postprocess_legal_markdown, repair_missing_numbered_paragraphs
-from .pdf_fallback import build_fallback_markdown
-from .word_processing import convert_doc_to_docx, prepare_docx_for_docling
+from .word_processing import convert_doc_to_docx, convert_pdf_to_docx, prepare_docx_for_docling
 
 
 MODEL_CACHE_ROOT = REPO_ROOT / "data" / "contract_review_runtime_cache"
@@ -117,25 +116,6 @@ def export_markdown(document: object, output_dir: Path, apply_postprocess: bool)
         return "error", str(exc)
 
 
-def export_fallback_markdown(
-    source_path: Path,
-    output_dir: Path,
-    *,
-    apply_postprocess: bool,
-) -> tuple[str, str, dict[str, Any]]:
-    """Export markdown from the lightweight local PDF parser."""
-
-    try:
-        markdown, stats = build_fallback_markdown(source_path)
-        if apply_postprocess:
-            markdown = postprocess_legal_markdown(markdown)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        (output_dir / "output.md").write_text(markdown, encoding="utf-8")
-        return "ok", "", stats
-    except Exception as exc:  # noqa: BLE001
-        return "error", str(exc), {}
-
-
 def write_meta(
     output_dir: Path,
     run_id: str,
@@ -211,19 +191,29 @@ def process_one(
     }
     start_time = time.time()
 
-    if item.file_type == "doc":
-        print("[预处理] 检测到 `.doc`，开始尝试转换为 `.docx` ...")
+    if item.file_type in {"doc", "pdf"}:
+        source_label = ".doc" if item.file_type == "doc" else ".pdf"
+        print(f"[预处理] 检测到 `{source_label}`，开始尝试转换为 `.docx` ...")
         conversion_start = time.time()
-        docx_path, method = convert_doc_to_docx(
-            item.source_path,
-            output_dir / "_converted",
-            cache_roots=history_output_roots,
-            output_subdir=item.output_subdir,
-            current_run_id=run_id,
-        )
+        if item.file_type == "doc":
+            docx_path, method = convert_doc_to_docx(
+                item.source_path,
+                output_dir / "_converted",
+                cache_roots=history_output_roots,
+                output_subdir=item.output_subdir,
+                current_run_id=run_id,
+            )
+        else:
+            docx_path, method = convert_pdf_to_docx(
+                item.source_path,
+                output_dir / "_converted",
+                cache_roots=history_output_roots,
+                output_subdir=item.output_subdir,
+                current_run_id=run_id,
+            )
         conversion_elapsed = round(time.time() - conversion_start, 2)
         if docx_path is None:
-            message = "doc 预处理失败，已跳过 Docling 转换。"
+            message = f"{item.file_type} 预处理失败，已跳过 Docling 转换。"
             doc_conversion_info = {"success": False, "error": method}
             elapsed_seconds = round(time.time() - start_time, 2)
             write_meta(
@@ -255,6 +245,7 @@ def process_one(
             "method": method,
             "elapsed_seconds": conversion_elapsed,
             "output_path": str(docx_path),
+            "source_file_type": item.file_type,
         }
         working_path = docx_path
         print(f"[预处理] 成功: {method}, {conversion_elapsed}s")
@@ -276,79 +267,6 @@ def process_one(
             print(f"[批注] 抽取到 {len(comment_anchors)} 条批注锚点")
         if style_hints:
             print(f"[样式] 抽取到 {len(style_hints)} 条样式提示")
-
-    if effective_file_type == "pdf":
-        print("[PDF] 转换开始，parser=pypdf/PyPDF2")
-        md_status, md_error, fallback_stats = export_fallback_markdown(
-            item.source_path,
-            output_dir,
-            apply_postprocess=not no_postprocess,
-        )
-        docx_preprocess_info = {
-            **(docx_preprocess_info or {}),
-            "fallback_pdf_parse": {
-                "applied": md_status == "ok",
-                "stats": fallback_stats,
-                "parser": "pypdf_or_pypdf2",
-                "error": md_error,
-            },
-        }
-        if md_status == "ok":
-            elapsed_seconds = round(time.time() - start_time, 2)
-            write_meta(
-                output_dir,
-                run_id,
-                item,
-                device,
-                elapsed_seconds,
-                doc_conversion_info,
-                docx_preprocess_info,
-                "ok",
-                "",
-                "",
-                comment_anchors,
-                style_hints,
-                inline_stats,
-            )
-            print(f"[成功] PDF output.md, elapsed={elapsed_seconds}s")
-            return {
-                "sample_id": item.sample_id,
-                "source": str(item.source_path),
-                "output_subdir": item.output_subdir.as_posix(),
-                "status": "ok",
-                "output_md": str(output_dir / "output.md"),
-                "comment_anchor_count": len(comment_anchors),
-                "style_hint_count": len(style_hints),
-                "inline_injection": inline_stats,
-                "elapsed_seconds": elapsed_seconds,
-                "fallback_mode": "pdf_text_only",
-            }
-
-        elapsed_seconds = round(time.time() - start_time, 2)
-        write_meta(
-            output_dir,
-            run_id,
-            item,
-            device,
-            elapsed_seconds,
-            doc_conversion_info,
-            docx_preprocess_info,
-            "error",
-            md_error,
-            "",
-            comment_anchors,
-            style_hints,
-            inline_stats,
-        )
-        print(f"[失败] PDF parser error: {md_error[:200]}")
-        return {
-            "sample_id": item.sample_id,
-            "source": str(item.source_path),
-            "output_subdir": item.output_subdir.as_posix(),
-            "status": "failed",
-            "reason": "pdf_parse_error",
-            "error_detail": md_error,
-        }
 
     print(f"[Docling] 转换开始，device={device}, file_type={effective_file_type}")
     document, docling_error = run_docling(docling_input_path, file_type=effective_file_type, device=device)

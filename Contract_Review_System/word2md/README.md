@@ -74,9 +74,9 @@ word2md/
 - 读取原始 `doc/docx/pdf` 合同、第三方审查结果、最终审查意见、采纳说明
 - 输出结构稳定的 `output.md`
 - 同步输出 `meta.json`，保留源文件路径、批注锚点、样式提示、`.doc -> .docx` 转换信息
-- PDF 默认走 `pypdf` / `PyPDF2` 的本地解析链路，不再依赖 Docling 模型下载
-- 这种方案更适合公司电脑和客户电脑，通常不需要管理员权限，也不依赖 HuggingFace 缓存
-- 当前 PDF 解析重点是“稳定可用”，能保留分页和基础文本结构，但标题层级、表格还原能力弱于模型方案
+- PDF 默认先转换为 `.docx`，再复用现有 `docx -> Markdown` 流程
+- 这样最终批注可以直接落在 PDF 转出的 Word 上，展示效果更接近 `doc/docx` 输入
+- PDF 预处理优先使用 `pdf2docx`，也兼容已安装 Microsoft Word 的 COM 自动化导出
 - 每次批量运行输出 `run_summary.json`
 
 ## 默认输入输出
@@ -97,10 +97,10 @@ conda activate langchain
 pip install docling
 ```
 
-如需处理 `pdf`，还需要安装轻量解析依赖：
+如需处理 `pdf`，建议安装：
 
 ```powershell
-pip install pypdf
+pip install pdf2docx
 ```
 
 ## 常用命令

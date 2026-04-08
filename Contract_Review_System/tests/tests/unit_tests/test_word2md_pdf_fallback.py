@@ -7,23 +7,55 @@ from Contract_Review_System.word2md.src.word2md.common import SourceItem
 from Contract_Review_System.word2md.src.word2md.pipeline import process_one
 
 
-def test_process_one_uses_local_pdf_parser_without_docling(monkeypatch, tmp_path: Path) -> None:
+def test_process_one_converts_pdf_to_docx_before_docling(monkeypatch, tmp_path: Path) -> None:
     pdf_path = tmp_path / "demo.pdf"
     pdf_path.write_bytes(b"%PDF-1.4\n%mock\n")
-
-    def _unexpected_docling(*args, **kwargs):  # type: ignore[no-untyped-def]
-        raise AssertionError("PDF 路径不应再调用 Docling。")
+    converted_docx = tmp_path / "converted" / "demo.docx"
+    converted_docx.parent.mkdir(parents=True, exist_ok=True)
+    converted_docx.write_bytes(b"PK\x03\x04")
 
     monkeypatch.setattr(
-        "Contract_Review_System.word2md.src.word2md.pipeline.run_docling",
-        _unexpected_docling,
+        "Contract_Review_System.word2md.src.word2md.pipeline.convert_pdf_to_docx",
+        lambda *_args, **_kwargs: (converted_docx, "pdf2docx"),
     )
     monkeypatch.setattr(
-        "Contract_Review_System.word2md.src.word2md.pipeline.build_fallback_markdown",
-        lambda *_args, **_kwargs: (
-            "# demo\n\n## 第 1 页\n\nhello contract\n",
-            {"page_count": 1, "non_empty_page_count": 1, "line_count": 1, "used_pypdf": True},
+        "Contract_Review_System.word2md.src.word2md.pipeline.prepare_docx_for_docling",
+        lambda path, _work_dir: (path, None),
+    )
+    monkeypatch.setattr(
+        "Contract_Review_System.word2md.src.word2md.pipeline.extract_docx_comments_with_anchors",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        "Contract_Review_System.word2md.src.word2md.pipeline.extract_docx_style_hints",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        "Contract_Review_System.word2md.src.word2md.pipeline.extract_docx_visible_paragraphs",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        "Contract_Review_System.word2md.src.word2md.pipeline.run_docling",
+        lambda path, **_kwargs: (
+            {"path": str(path)},
+            "",
         ),
+    )
+    def _fake_export_markdown(_document: object, output_dir: Path, **_kwargs: object) -> tuple[str, str]:
+        (output_dir / "output.md").write_text("# demo\n\nhello contract\n", encoding="utf-8")
+        return "ok", ""
+
+    monkeypatch.setattr(
+        "Contract_Review_System.word2md.src.word2md.pipeline.export_markdown",
+        _fake_export_markdown,
+    )
+    monkeypatch.setattr(
+        "Contract_Review_System.word2md.src.word2md.pipeline.inject_inline_annotations",
+        lambda markdown, _comment_anchors, _style_hints: (markdown, {"comment_matched": 0, "comment_unmatched": 0, "style_matched": 0, "style_unmatched": 0}),
+    )
+    monkeypatch.setattr(
+        "Contract_Review_System.word2md.src.word2md.pipeline.repair_missing_numbered_paragraphs",
+        lambda markdown, _paragraphs: (markdown, {}),
     )
 
     item = SourceItem(
@@ -46,5 +78,5 @@ def test_process_one_uses_local_pdf_parser_without_docling(monkeypatch, tmp_path
     assert markdown_path.exists()
     assert "hello contract" in markdown_path.read_text(encoding="utf-8")
     meta = json.loads(markdown_path.with_name("meta.json").read_text(encoding="utf-8"))
-    assert meta["fallback_pdf_parse"]["applied"] is True
-    assert meta["fallback_pdf_parse"]["parser"] == "pypdf_or_pypdf2"
+    assert meta["doc_conversion"]["method"] == "pdf2docx"
+    assert meta["doc_conversion"]["output_path"] == str(converted_docx)

@@ -43,8 +43,8 @@ python Contract_Review_System/contract_review_pipeline/main.py `
 
 - `run_summary.json` 和 `meta.json` 仍由 `word2md` 保留，用于溯源、复跑和 Word 批注导出
 - 纯生产结果统一写到 `local_llm_result.json`
-- PDF 输入会先转换为 Markdown，再生成“结构化审查底稿 docx”用于批注导出
-- PDF 默认使用 `pypdf` / `PyPDF2` 的本地解析链路，避免公司电脑因模型下载、缓存或权限限制而卡死
+- PDF 输入会先转换为 `docx`，再进入原有 `word2md -> only_prompt_local_llm -> Word 批注` 链路
+- 最终批注默认直接落在 PDF 转出的 `docx` 上，展示效果比“Markdown 重建 Word”更稳定
 - 顶层默认直接展示批注版 Word 文件，文件名自动跟随输入文件名；重名时自动编号
 - 辅助文件统一收纳到 `_artifacts/`，并附带 `文件说明.md`
 - 后续如果需要评测，应由 `tests` 或独立评测模块额外读取 `local_llm_result.json` 与第三方结果，再做组装

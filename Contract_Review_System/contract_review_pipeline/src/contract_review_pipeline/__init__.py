@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from .pipeline import run_contract_review_pipeline
+from .pipeline_crsv1 import run_contract_review_pipeline
 
 __all__ = ["run_contract_review_pipeline"]

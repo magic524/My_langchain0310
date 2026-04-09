@@ -1,4 +1,4 @@
-我们在做一个合同审查系统agent，目标是让用户输入合同doc\docx\pdf文件，输出word注释相关段落并标注风险点、说明、建议\一份报告（涵盖对应公司的基本信息，正在面临的诉讼风险）
+我们在做一个合同审查系统agent，目标是让用户输入合同doc\docx\pdf文件，输出word注释相关段落并标注风险点、说明、建议\一份报告（涵盖对应公司的基本信息，正在面临的诉讼风险【联网功能建好前暂时搁置】）
 目前已经做了
 文件格式转换【Contract_Review_System\word2md】
 本地模型纯依赖prompt
@@ -6,3 +6,5 @@
 结果评测
 【Contract_Review_System\tests】
 联网搜索法律尝试【Contract_Review_System\search_API】
+工作流【Contract_Review_System\contract_review_pipeline】
+UI界面【Contract_Review_System\GUI】

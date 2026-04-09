@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Callable
 
 from Contract_Review_System.common.local_llm_client import load_runtime_config, resolve_runtime_env_path
-from Contract_Review_System.contract_review_pipeline.src.contract_review_pipeline.pipeline import (
+from Contract_Review_System.contract_review_pipeline.src.contract_review_pipeline.pipeline_crsv1 import (
     run_contract_review_pipeline,
 )
 
@@ -41,6 +41,7 @@ class GuiReviewResult:
 
     pipeline_output_dir: str
     primary_comment_file: str
+    primary_report_path: str
     comment_output_dir: str
     summary_path: str
     log_path: str
@@ -96,6 +97,7 @@ class GuiPipelineService:
         return GuiReviewResult(
             pipeline_output_dir=result["pipeline_output_dir"],
             primary_comment_file=result.get("primary_comment_file", ""),
+            primary_report_path=result.get("primary_report_path", ""),
             comment_output_dir=result["comment_output_dir"],
             summary_path=result["summary_path"],
             log_path=result["log_path"],

@@ -1,10 +1,11 @@
 ﻿# Contract_Review_System
 
-当前合同审查系统统一整理为 3 个一级子项目：
+当前合同审查系统当前主线整理为 4 个一级子项目：
 
 ```text
 Contract_Review_System/
 ├─ README.md
+├─ CRSv1/
 ├─ word2md/
 ├─ tests/
 └─ only_prompt_local_llm/
@@ -20,7 +21,15 @@ Contract_Review_System/
 - 输出：统一结构的 `output.md + meta.json + run_summary.json`
 - 默认输出根目录：`data/contract_review_outputs/word2md`
 
-### 2. `only_prompt_local_llm`
+### 2. `CRSv1`
+
+负责正式 v1 审查主链路。
+
+- 输入：某次 `word2md` 结果
+- 输出：`crsv1_result.json`、`risk_statistics.json`、`审查报告.md`、`原合同批注版_CRSv1`
+- 默认输出根目录：`Contract_Review_System/CRSv1/outputs`
+
+### 3. `only_prompt_local_llm`
 
 负责纯 prompt 的本地模型调用。
 
@@ -28,7 +37,7 @@ Contract_Review_System/
 - 输出：`dataset_with_local_llm.json`、`local_llm_predictions.json`、`原合同批注版_local_llm`
 - 默认输出根目录：`Contract_Review_System/only_prompt_local_llm/outputs`
 
-### 3. `tests`
+### 4. `tests`
 
 负责评测、三方对照和总体汇总。
 
@@ -73,7 +82,16 @@ python Contract_Review_System/tests/scripts/evaluate.py `
   --output Contract_Review_System/tests/outputs/eval_runs/contract_md_260323
 ```
 
-### 第三步：如要加入本地模型结果
+### 第三步：运行 CRSv1 正式审查链路
+
+```powershell
+conda activate langchain
+python Contract_Review_System/CRSv1/main.py `
+  --input contract_md_260323 `
+  --output 20260408_crsv1
+```
+
+### 第四步：如要继续保留旧版纯 prompt 实验链路
 
 先跑本地模型：
 
@@ -111,6 +129,7 @@ data/contract_review_outputs/
 
 Contract_Review_System/tests/outputs/
 Contract_Review_System/only_prompt_local_llm/outputs/
+Contract_Review_System/CRSv1/outputs/
 ```
 
 ## 维护原则

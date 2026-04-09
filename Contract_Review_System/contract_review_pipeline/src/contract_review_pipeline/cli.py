@@ -8,7 +8,7 @@ from pathlib import Path
 from Contract_Review_System.common.local_llm_client import load_runtime_config, resolve_runtime_env_path
 from Contract_Review_System.word2md.src.word2md.common import DEFAULT_OUTPUT_DIR, resolve_path
 
-from .pipeline import run_contract_review_pipeline
+from .pipeline_crsv1 import run_contract_review_pipeline
 
 
 CURRENT_FILE = Path(__file__).resolve()
@@ -51,7 +51,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the CLI parser for the production review pipeline."""
 
     parser = argparse.ArgumentParser(
-        description="输入 doc/docx/pdf，自动完成 word2md、本地模型审查和批注版 Word 导出。"
+        description="输入 doc/docx/pdf，自动完成 word2md、CRSv1 审查、批注版 Word 和审查报告导出。"
     )
     parser.add_argument("--input", required=True, help="输入合同文件或目录路径。")
     parser.add_argument("--recursive", action="store_true", help="目录模式下递归扫描子目录。")

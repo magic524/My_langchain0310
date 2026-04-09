@@ -22,8 +22,8 @@ def main() -> int:
     """
 
     try:
-        # 真正的窗口实现在 `qt_app.py`，入口文件只负责启动和兜底报错。
-        from Contract_Review_System.GUI.qt_app import run
+        # CRSv1 GUI 在新窗口模块中实现，入口文件只负责启动和兜底报错。
+        from Contract_Review_System.GUI.qt_app_crsv1 import run
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1

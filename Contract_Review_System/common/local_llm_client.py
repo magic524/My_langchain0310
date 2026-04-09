@@ -26,6 +26,7 @@ class RuntimeConfig:
     base_url: str
     temperature: float
     extra_body: dict[str, Any] | None
+    request_timeout_seconds: float
 
 
 # 这个函数负责手动解析 `.env` 文件，避免额外引入 `python-dotenv` 依赖。
@@ -97,12 +98,19 @@ def load_runtime_config(env_path: Path | None = None) -> RuntimeConfig:
         if isinstance(loaded, dict):
             extra_body = loaded
 
+    request_timeout_raw = values.get("OPENAI_REQUEST_TIMEOUT", "600").strip()
+    try:
+        request_timeout_seconds = float(request_timeout_raw)
+    except ValueError:
+        request_timeout_seconds = 600.0
+
     return RuntimeConfig(
         model_name=model_name,
         api_key=api_key,
         base_url=base_url,
         temperature=temperature,
         extra_body=extra_body,
+        request_timeout_seconds=max(request_timeout_seconds, 60.0),
     )
 
 
@@ -145,14 +153,17 @@ def post_chat_request(runtime: RuntimeConfig, payload: dict[str, Any]) -> str:
     )
 
     try:
-        with urllib.request.urlopen(request, timeout=180) as response:
+        with urllib.request.urlopen(request, timeout=runtime.request_timeout_seconds) as response:
             body = response.read().decode("utf-8")
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="ignore")
         msg = f"模型接口请求失败: HTTP {exc.code} {detail}"
         raise RuntimeError(msg) from exc
     except urllib.error.URLError as exc:
-        msg = f"模型接口连接失败: {exc.reason}"
+        msg = (
+            f"模型接口连接失败: {exc.reason}. "
+            f"request_timeout_seconds={runtime.request_timeout_seconds}"
+        )
         raise RuntimeError(msg) from exc
 
     try:

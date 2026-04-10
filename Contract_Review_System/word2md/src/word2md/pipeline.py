@@ -41,19 +41,19 @@ def configure_restricted_runtime() -> None:
 
 
 def explain_docling_error(raw_error: str) -> str:
-    """Convert low-level PDF conversion errors into user-facing diagnostics."""
+    """Convert low-level Docling errors into user-facing diagnostics."""
 
     if "WinError 1314" in raw_error or "客户端没有所需的特权" in raw_error:
         return (
-            "PDF 解析失败：当前电脑限制了模型缓存所需的链接权限。"
+            "Docling 转换失败：当前电脑限制了模型缓存所需的链接权限。"
             " 已自动切换到无 symlink 模式；如果仍失败，请检查公司安全策略是否拦截了模型下载或缓存写入。"
         )
     if "huggingface" in raw_error.lower():
-        return "PDF 解析失败：Docling 所需模型无法完成下载或缓存，请检查网络、代理或本地缓存目录权限。"
+        return "Docling 转换失败：所需模型无法完成下载或缓存，请检查网络、代理或本地缓存目录权限。"
     return raw_error
 
 
-def import_docling() -> tuple[type[Any], Any, type[Any], type[Any] | None]:
+def import_docling() -> tuple[type[Any], Any, type[Any]]:
     """延迟导入 Docling，便于给出更明确的环境提示。"""
 
     try:
@@ -61,12 +61,7 @@ def import_docling() -> tuple[type[Any], Any, type[Any], type[Any] | None]:
         from docling.datamodel.base_models import InputFormat
         from docling.document_converter import DocumentConverter, WordFormatOption
 
-        try:
-            from docling.document_converter import PdfFormatOption
-        except ImportError:
-            PdfFormatOption = None
-
-        return DocumentConverter, InputFormat, WordFormatOption, PdfFormatOption
+        return DocumentConverter, InputFormat, WordFormatOption
     except ImportError as exc:
         raise RuntimeError(
             "无法导入 docling，请先进入 `langchain` 环境并安装依赖："
@@ -80,15 +75,12 @@ def run_docling(input_path: Path, *, file_type: str, device: str = "cpu") -> tup
     del device
 
     try:
-        DocumentConverter, InputFormat, WordFormatOption, PdfFormatOption = import_docling()
+        DocumentConverter, InputFormat, WordFormatOption = import_docling()
         format_options: dict[Any, Any] = {
             InputFormat.DOCX: WordFormatOption(),
         }
-        if PdfFormatOption is not None and hasattr(InputFormat, "PDF"):
-            format_options[getattr(InputFormat, "PDF")] = PdfFormatOption()
-
-        if file_type == "pdf" and (PdfFormatOption is None or not hasattr(InputFormat, "PDF")):
-            raise RuntimeError("当前安装的 docling 版本未暴露 PDF 转换能力，请升级 docling 后重试。")
+        if file_type == "pdf":
+            raise RuntimeError("PDF 需先转换为 DOCX 后再进入 Docling，当前链路不再支持 Docling 直接解析 PDF。")
 
         converter = DocumentConverter(format_options=format_options)
         result = converter.convert(str(input_path))

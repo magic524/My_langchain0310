@@ -37,6 +37,8 @@ except ImportError as exc:  # pragma: no cover
 
 
 class PipelineWorker(QObject):
+    """在后台线程中执行审查流程，并通过信号向 UI 回传进度与结果。"""
+
     progress_changed = pyqtSignal(int, str)
     log_emitted = pyqtSignal(str)
     finished = pyqtSignal(dict)
@@ -61,6 +63,8 @@ class PipelineWorker(QObject):
 
 
 class ContractReviewMainWindow(QMainWindow):
+    """CRSv1 图形界面主窗口，负责输入配置、任务调度与结果展示。"""
+
     def __init__(self) -> None:
         super().__init__()
         self.service = GuiPipelineService()

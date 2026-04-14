@@ -247,7 +247,7 @@ def extract_docx_style_hints(docx_path: Path) -> list[dict]:
                         if highlight_value and highlight_value.lower() != "none":
                             styles.add(f"highlight:{highlight_value}")
 
-                # 加粗在 Docling 导出的 Markdown 中通常已经保留，这里只保留额外样式提示。
+                # 加粗在当前 Markdown 导出结果中通常已经保留，这里只保留额外样式提示。
                 tags = sorted([*styles, *colors])
 
                 if not tags:

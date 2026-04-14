@@ -19,10 +19,6 @@ def test_process_one_converts_pdf_to_docx_before_docling(monkeypatch, tmp_path: 
         lambda *_args, **_kwargs: (converted_docx, "pdf2docx"),
     )
     monkeypatch.setattr(
-        "Contract_Review_System.word2md.src.word2md.pipeline.prepare_docx_for_docling",
-        lambda path, _work_dir: (path, None),
-    )
-    monkeypatch.setattr(
         "Contract_Review_System.word2md.src.word2md.pipeline.extract_docx_comments_with_anchors",
         lambda _path: [],
     )
@@ -34,19 +30,12 @@ def test_process_one_converts_pdf_to_docx_before_docling(monkeypatch, tmp_path: 
         "Contract_Review_System.word2md.src.word2md.pipeline.extract_docx_visible_paragraphs",
         lambda _path: [],
     )
-    monkeypatch.setattr(
-        "Contract_Review_System.word2md.src.word2md.pipeline.run_docling",
-        lambda path, **_kwargs: (
-            {"path": str(path)},
-            "",
-        ),
-    )
-    def _fake_export_markdown(_document: object, output_dir: Path, **_kwargs: object) -> tuple[str, str]:
+    def _fake_export_markdown(_path: Path, output_dir: Path, **_kwargs: object) -> tuple[str, str]:
         (output_dir / "output.md").write_text("# demo\n\nhello contract\n", encoding="utf-8")
         return "ok", ""
 
     monkeypatch.setattr(
-        "Contract_Review_System.word2md.src.word2md.pipeline.export_markdown",
+        "Contract_Review_System.word2md.src.word2md.pipeline.export_markdown_from_mammoth",
         _fake_export_markdown,
     )
     monkeypatch.setattr(
@@ -80,3 +69,4 @@ def test_process_one_converts_pdf_to_docx_before_docling(monkeypatch, tmp_path: 
     meta = json.loads(markdown_path.with_name("meta.json").read_text(encoding="utf-8"))
     assert meta["doc_conversion"]["method"] == "pdf2docx"
     assert meta["doc_conversion"]["output_path"] == str(converted_docx)
+    assert meta["markdown_backend_used"] == "mammoth"

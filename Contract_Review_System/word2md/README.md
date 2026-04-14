@@ -46,10 +46,10 @@ word2md/
   - Markdown 后处理、编号修复、批注注入
 - `src/word2md/pipeline.py`
   - 主流程调度
-  - 串起 Docling、Markdown 导出、meta 写入
+  - 串起 Mammoth、Markdown 导出、meta 写入
 - `src/word2md/word_processing.py`
   - `doc -> docx` 转换
-  - Docling 输入前的预处理
+  - PDF/Word 预处理与格式转换
 - `docs/structure.md`
   - 结构说明和维护约定
 
@@ -91,10 +91,10 @@ word2md/
 conda activate langchain
 ```
 
-如当前环境缺少 `docling`：
+如当前环境缺少 `mammoth`：
 
 ```powershell
-pip install docling
+pip install mammoth
 ```
 
 如需处理 `pdf`，建议安装：
@@ -141,7 +141,7 @@ python Contract_Review_System/word2md/scripts/main.py `
 - `--recursive`：目录模式下递归扫描子目录
 - `--output-dir`：输出根目录
 - `--history-output-dir`：历史输出根目录，可复用旧 `_converted/*.docx`
-- `--device`：Docling 推理设备，默认 `cpu`
+- `--device`：保留兼容参数，当前 Light 分支下不会影响 `mammoth` 转换
 - `--no-postprocess`：关闭 Markdown 后处理
 
 兼容旧参数：`--input-file`、`--input-dir`、`--run-id`
@@ -151,5 +151,4 @@ python Contract_Review_System/word2md/scripts/main.py `
 - `output.md`：下游统一消费的 Markdown 结果
 - `meta.json`：转换元信息、批注锚点、样式提示、异常记录
 - `_converted/`：原始 `.doc` 的缓存转换结果
-- `_docling_input/`：给 Docling 的预处理文件
 - `run_summary.json`：本次批量任务摘要

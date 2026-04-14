@@ -1,15 +1,11 @@
-"""Word 文件预处理：文档转 `docx` 与 Docling 输入修复。"""
+"""Word 文件预处理：文档转 `docx` 与通用格式修复。"""
 
 from __future__ import annotations
 
-import copy
 import shutil
 import subprocess
-import xml.etree.ElementTree as ET
 import zipfile
 from pathlib import Path
-
-from .common import DOCX_NS
 
 
 def try_libreoffice(doc_path: Path, output_dir: Path) -> Path | None:
@@ -292,75 +288,3 @@ def convert_pdf_to_docx(
         "或确保本机安装了可自动化调用的 Microsoft Word。"
     )
 
-
-def flatten_alternate_content(root: ET.Element) -> int:
-    """移除 `mc:AlternateContent` 包裹层，只保留可用分支。"""
-
-    mc_ns = DOCX_NS["mc"]
-    parent_map = {child: parent for parent in root.iter() for child in parent}
-    replaced_count = 0
-
-    for node in list(root.findall(f".//{{{mc_ns}}}AlternateContent")):
-        parent = parent_map.get(node)
-        if parent is None:
-            continue
-
-        replacement_children: list[ET.Element] = []
-        for branch_name in ("Fallback", "Choice"):
-            branch = node.find(f"{{{mc_ns}}}{branch_name}")
-            if branch is not None and list(branch):
-                replacement_children = [copy.deepcopy(child) for child in list(branch)]
-                break
-
-        insert_at = list(parent).index(node)
-        parent.remove(node)
-        for offset, child in enumerate(replacement_children):
-            parent.insert(insert_at + offset, child)
-        replaced_count += 1
-
-    return replaced_count
-
-
-def prepare_docx_for_docling(docx_path: Path, work_dir: Path) -> tuple[Path, dict | None]:
-    """修复已知会让 Docling 崩溃的 DOCX 标记。"""
-
-    if not docx_path.exists():
-        return docx_path, None
-
-    try:
-        with zipfile.ZipFile(docx_path) as archive:
-            if "word/document.xml" not in archive.namelist():
-                return docx_path, None
-
-            document_root = ET.fromstring(archive.read("word/document.xml"))
-            alternate_content_count = len(document_root.findall(".//mc:AlternateContent", DOCX_NS))
-            if alternate_content_count == 0:
-                return docx_path, None
-
-            replaced_count = flatten_alternate_content(document_root)
-            if replaced_count == 0:
-                return docx_path, None
-
-            work_dir.mkdir(parents=True, exist_ok=True)
-            sanitized_path = work_dir / f"{docx_path.stem}.docling.docx"
-            sanitized_document_xml = ET.tostring(document_root, encoding="utf-8", xml_declaration=True)
-
-            with zipfile.ZipFile(sanitized_path, "w") as sanitized_zip:
-                for info in archive.infolist():
-                    payload = (
-                        sanitized_document_xml if info.filename == "word/document.xml" else archive.read(info.filename)
-                    )
-                    sanitized_zip.writestr(info, payload)
-
-        return sanitized_path, {
-            "applied": True,
-            "reason": "flatten_alternate_content",
-            "alternate_content_count": alternate_content_count,
-            "output_path": str(sanitized_path),
-        }
-    except Exception as exc:
-        return docx_path, {
-            "applied": False,
-            "reason": "flatten_alternate_content_failed",
-            "error": str(exc),
-        }

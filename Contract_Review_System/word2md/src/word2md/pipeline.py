@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .common import REPO_ROOT, SourceItem
+from .common import SourceItem
 from .docx_features import (
     extract_docx_comments_with_anchors,
     extract_docx_style_hints,
@@ -18,41 +17,10 @@ from .docx_features import (
 )
 from .mammoth_converter import convert_docx_to_markdown, is_mammoth_available
 from .markdown_formatter import inject_inline_annotations, postprocess_legal_markdown, repair_missing_numbered_paragraphs
-from .word_processing import convert_doc_to_docx, convert_pdf_to_docx, prepare_docx_for_docling
+from .word_processing import convert_doc_to_docx, convert_pdf_to_docx
 
 
-MODEL_CACHE_ROOT = REPO_ROOT / "data" / "contract_review_runtime_cache"
-SUPPORTED_MARKDOWN_BACKENDS = {"auto", "mammoth", "docling"}
-
-
-def configure_restricted_runtime() -> None:
-    """Use workspace-local Hugging Face caches for Docling runtime."""
-
-    huggingface_root = MODEL_CACHE_ROOT / "huggingface"
-    transformers_root = MODEL_CACHE_ROOT / "transformers"
-    for cache_dir in (huggingface_root, transformers_root):
-        cache_dir.mkdir(parents=True, exist_ok=True)
-
-    os.environ.setdefault("HF_HOME", str(huggingface_root))
-    os.environ.setdefault("HF_HUB_CACHE", str(huggingface_root / "hub"))
-    os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(huggingface_root / "hub"))
-    os.environ.setdefault("TRANSFORMERS_CACHE", str(transformers_root))
-    os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS", "1")
-    os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
-
-
-def explain_docling_error(raw_error: str) -> str:
-    """Convert low-level Docling errors into user-facing diagnostics."""
-
-    lowered = raw_error.lower()
-    if "winerror 1314" in lowered:
-        return (
-            "Docling 转换失败：当前设备限制了模型缓存所需的链接权限。"
-            "如果持续失败，请检查公司安全策略是否拦截模型下载或缓存写入。"
-        )
-    if "huggingface" in lowered:
-        return "Docling 转换失败：所需模型无法完成下载或缓存，请检查网络、代理或本地缓存目录权限。"
-    return raw_error
+SUPPORTED_MARKDOWN_BACKENDS = {"auto", "mammoth"}
 
 
 def explain_mammoth_error(raw_error: str) -> str:
@@ -71,65 +39,9 @@ def resolve_markdown_backend(preferred_backend: str) -> str:
         msg = f"不支持的 Markdown 后端：{preferred_backend}"
         raise ValueError(msg)
 
-    if normalized == "auto":
-        return "mammoth" if is_mammoth_available() else "docling"
-    return normalized
-
-
-def import_docling() -> tuple[type[Any], Any, type[Any]]:
-    """Import Docling lazily with a friendly error message."""
-
-    try:
-        configure_restricted_runtime()
-        from docling.datamodel.base_models import InputFormat
-        from docling.document_converter import DocumentConverter, WordFormatOption
-
-        return DocumentConverter, InputFormat, WordFormatOption
-    except ImportError as exc:
-        raise RuntimeError(
-            "无法导入 docling，请先进入 `langchain` 环境并安装依赖："
-            "`conda activate langchain && pip install docling`"
-        ) from exc
-
-
-def run_docling(input_path: Path, *, file_type: str, device: str = "cpu") -> tuple[object | None, str]:
-    """Execute Docling conversion."""
-
-    del device
-
-    try:
-        DocumentConverter, InputFormat, WordFormatOption = import_docling()
-        if file_type == "pdf":
-            raise RuntimeError("PDF 需先转换为 DOCX 后再进入 Docling，当前链路不再支持 Docling 直接解析 PDF。")
-
-        converter = DocumentConverter(
-            format_options={
-                InputFormat.DOCX: WordFormatOption(),
-            }
-        )
-        result = converter.convert(str(input_path))
-        return result.document, ""
-    except Exception as exc:  # noqa: BLE001
-        raw_error = f"{type(exc).__name__}: {exc}\n{traceback.format_exc()}"
-        return None, explain_docling_error(raw_error)
-
-
-def export_markdown_from_docling(document: object, output_dir: Path, apply_postprocess: bool) -> tuple[str, str]:
-    """Export a Docling document into `output.md`."""
-
-    try:
-        markdown = document.export_to_markdown(
-            page_break_placeholder="\n\n---\n\n",
-            mark_annotations=True,
-        )
-        if apply_postprocess:
-            markdown = postprocess_legal_markdown(markdown)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        (output_dir / "output.md").write_text(markdown, encoding="utf-8")
-        return "ok", ""
-    except Exception as exc:  # noqa: BLE001
-        traceback.print_exc()
-        return "error", str(exc)
+    if not is_mammoth_available():
+        raise RuntimeError("当前 Light 分支仅支持 mammoth Markdown 后端，请先安装 mammoth。")
+    return "mammoth"
 
 
 def export_markdown_from_mammoth(input_path: Path, output_dir: Path, apply_postprocess: bool) -> tuple[str, str]:
@@ -180,7 +92,7 @@ def write_meta(
         "markdown_backend_requested": markdown_backend_requested,
         "markdown_backend_used": markdown_backend_used,
         "backend_error": backend_error,
-        "docling_error": backend_error if markdown_backend_used == "docling" else "",
+        "docling_error": "",
         "md_export": {"status": md_status, "error": md_error},
         "comment_anchor_count": len(comment_anchors),
         "comment_anchors": comment_anchors,
@@ -298,15 +210,6 @@ def process_one(
         working_path = docx_path
         print(f"[预处理] 成功: {method}, {conversion_elapsed}s")
 
-    conversion_input_path = working_path
-    effective_file_type = item.file_type
-    if working_path.suffix.lower() == ".docx" and actual_markdown_backend == "docling":
-        conversion_input_path, docx_preprocess_info = prepare_docx_for_docling(
-            working_path,
-            output_dir / "_docling_input",
-        )
-        effective_file_type = "docx"
-
     comment_source = working_path if working_path.suffix.lower() == ".docx" else None
     if comment_source is not None:
         comment_anchors = extract_docx_comments_with_anchors(comment_source)
@@ -317,42 +220,9 @@ def process_one(
             print(f"[样式] 抽取到 {len(style_hints)} 条样式提示")
 
     backend_error = ""
-    if actual_markdown_backend == "docling":
-        print(f"[Docling] 转换开始，device={device}, file_type={effective_file_type}")
-        document, backend_error = run_docling(conversion_input_path, file_type=effective_file_type, device=device)
-        if backend_error:
-            elapsed_seconds = round(time.time() - start_time, 2)
-            write_meta(
-                output_dir,
-                run_id,
-                item,
-                device,
-                elapsed_seconds,
-                doc_conversion_info,
-                docx_preprocess_info,
-                markdown_backend,
-                actual_markdown_backend,
-                "error",
-                "",
-                backend_error,
-                comment_anchors,
-                style_hints,
-                inline_stats,
-            )
-            print(f"[失败] Docling error: {backend_error[:200]}")
-            return {
-                "sample_id": item.sample_id,
-                "source": str(item.source_path),
-                "output_subdir": item.output_subdir.as_posix(),
-                "status": "failed",
-                "reason": "docling_error",
-                "error_detail": backend_error,
-            }
-        print("[导出] 输出 Markdown ...")
-        md_status, md_error = export_markdown_from_docling(document, output_dir, apply_postprocess=not no_postprocess)
-    else:
-        print(f"[Mammoth] 转换开始，file_type={effective_file_type}")
-        md_status, md_error = export_markdown_from_mammoth(working_path, output_dir, apply_postprocess=not no_postprocess)
+    effective_file_type = "docx" if working_path.suffix.lower() == ".docx" else item.file_type
+    print(f"[Mammoth] 转换开始，file_type={effective_file_type}")
+    md_status, md_error = export_markdown_from_mammoth(working_path, output_dir, apply_postprocess=not no_postprocess)
 
     if md_status == "ok":
         md_path = output_dir / "output.md"

@@ -79,13 +79,9 @@ $nuitkaArgs = @(
     "--include-package=Contract_Review_System.contract_review_pipeline",
     "--include-package=Contract_Review_System.word2md",
     "--include-package=Contract_Review_System.common",
-    "--include-package=docling",
-    "--include-package=docling_parse",
+    "--include-package=mammoth",
     "--include-package=pdf2docx",
     "--include-package=fitz",
-    "--include-package-data=docling",
-    "--include-package-data=docling_parse",
-    "--include-package-data=transformers",
     "--include-data-file=$contractReviewRoot\\.env=Contract_Review_System/.env",
     "--include-data-file=$contractReviewRoot\\.env.example=Contract_Review_System/.env.example",
     "--nofollow-import-to=pytest",
@@ -139,8 +135,8 @@ How to use
 Notes
 -----
 - This build only targets the current GUI entry chain: `python Contract_Review_System/GUI/main.py`
-- It avoids bundling the whole conda environment as-is, but `docling` and its dependencies can still keep the package large.
-- If you want the package to become much smaller, the next real optimization is to remove `docling` itself from the DOCX -> Markdown path.
+- This Light branch keeps the current GUI entry chain but removes the old `docling` packaging dependency.
+- DOCX -> Markdown uses `mammoth`, while PDF still follows `pdf2docx -> docx -> markdown`.
 "@
 Set-Content -Path (Join-Path $bundleRoot "README_FIRST_USE.txt") -Value $readmeText -Encoding UTF8
 

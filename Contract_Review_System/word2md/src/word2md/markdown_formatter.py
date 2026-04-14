@@ -49,7 +49,7 @@ def int_to_chinese_num(value: int) -> str:
 
 
 def postprocess_legal_markdown(md_text: str) -> str:
-    """轻量修复 Docling 导出的合同 Markdown 结构。"""
+    """轻量修复合同 Markdown 结构。"""
 
     section_re = re.compile(r"^\s*\*\*([一二三四五六七八九十]+)、([^*]+)\*\*\s*$")
     bullet_bold_re = re.compile(r"^\s*-\s+\*\*([^*]+)\*\*\s*$")
@@ -300,7 +300,7 @@ def find_line_index_for_candidates(
 
 
 def repair_missing_numbered_paragraphs(md_text: str, source_paragraphs: list[str]) -> tuple[str, dict]:
-    """用原始 DOCX 段落补齐 Docling 漏掉的编号条款。"""
+    """用原始 DOCX 段落补齐导出过程中漏掉的编号条款。"""
 
     if not md_text or not source_paragraphs:
         return md_text, {"inserted_count": 0}

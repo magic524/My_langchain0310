@@ -52,12 +52,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="历史输出根目录，可复用旧跑批中的 `_converted/*.docx` 作为兜底缓存。可重复传入。",
     )
     parser.add_argument("--run-id", default=None, help="输出批次名。默认使用当前时间戳。")
-    parser.add_argument("--device", default="cpu", help="Docling 推理设备，默认 `cpu`。")
+    parser.add_argument("--device", default="cpu", help="保留兼容参数，Light 分支下默认使用 `mammoth`。")
     parser.add_argument(
         "--markdown-backend",
         default="auto",
-        choices=["auto", "mammoth", "docling"],
-        help="DOCX 转 Markdown 后端。`auto` 默认优先 mammoth，缺失时回退 docling。",
+        choices=["auto", "mammoth"],
+        help="DOCX 转 Markdown 后端。Light 分支仅保留 mammoth，`auto` 等同于 `mammoth`。",
     )
     parser.add_argument(
         "--no-postprocess",

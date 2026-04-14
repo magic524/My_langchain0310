@@ -22,7 +22,7 @@
 - 默认使用 `--mingw64` 作为 C 编译后端，更适合当前 Python 3.11 + Windows 打包场景
 - 可通过 `-CompilerBackend zig|mingw64|msvc` 切换后端
 - 显式包含 `GUI / CRSv1 / contract_review_pipeline / word2md / common`
-- 显式包含当前链路里常见的动态依赖，如 `docling`、`pdf2docx`
+- 显式包含当前链路里常见的动态依赖，如 `mammoth`、`pdf2docx`
 - 默认不包含 `win32com/comtypes`，只有加 `-IncludeWordAutomation` 才会带入 Office 自动化依赖
 - 将 `.env` 一起打进输出目录
 
@@ -49,4 +49,4 @@ powershell -ExecutionPolicy Bypass -File Contract_Review_System/release_tools/bu
 
 - `.doc` 转换可能仍依赖本机 Microsoft Word 自动化。
 - 现在 PDF 已改为 `pdf -> pdf2docx -> docx -> word2md`，不再走 Docling 直接解析 PDF。
-- 即便使用 `Nuitka`，如果当前 DOCX -> Markdown 仍依赖 `docling`，包体和编译时间仍然会明显偏大；真正要继续瘦身，下一步应考虑把 `docling` 本身从主链中替换掉。
+- Light 分支已经移除了 `docling` 打包依赖，当前主链为 `mammoth + pdf2docx`；如果仍需继续瘦身，优先检查 `pdf2docx/fitz/win32com` 相关依赖。

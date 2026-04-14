@@ -11,18 +11,6 @@
 - 生成双击启动脚本和 `README_FIRST_USE.txt`
 - 额外输出一份 zip 压缩包，方便分发
 
-示例：
-```powershell
-powershell -ExecutionPolicy Bypass -File Contract_Review_System/release_tools/build_portable_sample.ps1
-```
-
-可选参数：
-```powershell
-powershell -ExecutionPolicy Bypass -File Contract_Review_System/release_tools/build_portable_sample.ps1 `
-  -EnvPrefix E:\conda_envs\langchain `
-  -OutputRoot E:\Magic_wu_python
-```
-
 ## build_nuitka_gui.ps1
 
 用于基于 `Nuitka` 打包当前 GUI 主入口 `Contract_Review_System/GUI/main.py`。
@@ -31,24 +19,34 @@ powershell -ExecutionPolicy Bypass -File Contract_Review_System/release_tools/bu
 默认行为：
 - 使用 `E:\conda_envs\langchain\python.exe`
 - 构建 `--standalone` GUI 程序
+- 默认使用 `--mingw64` 作为 C 编译后端，更适合当前 Python 3.11 + Windows 打包场景
+- 可通过 `-CompilerBackend zig|mingw64|msvc` 切换后端
 - 显式包含 `GUI / CRSv1 / contract_review_pipeline / word2md / common`
 - 显式包含当前链路里常见的动态依赖，如 `docling`、`pdf2docx`
+- 默认不包含 `win32com/comtypes`，只有加 `-IncludeWordAutomation` 才会带入 Office 自动化依赖
 - 将 `.env` 一起打进输出目录
 
 示例：
 ```powershell
-powershell -ExecutionPolicy Bypass -File Contract_Review_System/release_tools/build_nuitka_gui.ps1
+powershell -ExecutionPolicy Bypass -File Contract_Review_System/release_tools/build_nuitka_gui.ps1 -OutputRoot E:\Magic_wu_python
 ```
 
-可选参数：
+指定 Zig：
 ```powershell
 powershell -ExecutionPolicy Bypass -File Contract_Review_System/release_tools/build_nuitka_gui.ps1 `
-  -EnvPython E:\conda_envs\langchain\python.exe `
-  -OutputRoot E:\Magic_wu_python\nuitka_dist
+  -OutputRoot E:\Magic_wu_python `
+  -CompilerBackend zig
+```
+
+如需保留 `.doc` 的 Word 自动化转换：
+```powershell
+powershell -ExecutionPolicy Bypass -File Contract_Review_System/release_tools/build_nuitka_gui.ps1 `
+  -OutputRoot E:\Magic_wu_python `
+  -IncludeWordAutomation
 ```
 
 ## Notes
 
 - `.doc` 转换可能仍依赖本机 Microsoft Word 自动化。
 - 现在 PDF 已改为 `pdf -> pdf2docx -> docx -> word2md`，不再走 Docling 直接解析 PDF。
-- 即便使用 `Nuitka`，如果当前 DOCX -> Markdown 仍依赖 `docling`，包体也不会特别小；真正要继续瘦身，下一步应考虑把 `docling` 本身从主链中替换掉。
+- 即便使用 `Nuitka`，如果当前 DOCX -> Markdown 仍依赖 `docling`，包体和编译时间仍然会明显偏大；真正要继续瘦身，下一步应考虑把 `docling` 本身从主链中替换掉。

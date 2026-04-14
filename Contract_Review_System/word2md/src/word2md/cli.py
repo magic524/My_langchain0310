@@ -54,6 +54,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-id", default=None, help="输出批次名。默认使用当前时间戳。")
     parser.add_argument("--device", default="cpu", help="Docling 推理设备，默认 `cpu`。")
     parser.add_argument(
+        "--markdown-backend",
+        default="auto",
+        choices=["auto", "mammoth", "docling"],
+        help="DOCX 转 Markdown 后端。`auto` 默认优先 mammoth，缺失时回退 docling。",
+    )
+    parser.add_argument(
         "--no-postprocess",
         action="store_true",
         help="关闭 Markdown 后处理。默认开启，建议保留。",
@@ -114,6 +120,7 @@ def main() -> None:
         args.device,
         args.no_postprocess,
         history_output_roots,
+        markdown_backend=args.markdown_backend,
     )
     ok_count = sum(1 for result in results if result["status"] == "ok")
     fail_count = len(results) - ok_count

@@ -1,7 +1,10 @@
 param(
     [string]$EnvPython = "E:\conda_envs\langchain\python.exe",
     [string]$OutputRoot = "E:\Magic_wu_python\nuitka_dist",
-    [switch]$IncludeRuntimeCache = $false
+    [switch]$IncludeRuntimeCache = $false,
+    [switch]$IncludeWordAutomation = $false,
+    [ValidateSet("mingw64", "zig", "msvc")]
+    [string]$CompilerBackend = "mingw64"
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,7 +51,11 @@ Assert-PathExists $entryScript "GUI entry script"
 Assert-PathExists $contractReviewRoot "Contract_Review_System root"
 
 Write-Step "Checking Nuitka availability"
-& $EnvPython -m nuitka --version | Out-Null
+$nuitkaVersion = & $EnvPython -X utf8 -c "import nuitka; print(getattr(nuitka, '__version__', 'unknown'))"
+if (-not $nuitkaVersion) {
+    throw "Failed to import Nuitka from: $EnvPython"
+}
+Write-Step "Detected Nuitka version: $($nuitkaVersion | Select-Object -First 1)"
 
 New-Item -ItemType Directory -Force -Path $OutputRoot | Out-Null
 if (Test-Path $bundleRoot) {
@@ -62,7 +69,7 @@ $nuitkaArgs = @(
     "--standalone",
     "--assume-yes-for-downloads",
     "--enable-plugin=pyqt6",
-    "--msvc=latest",
+    "--module-parameter=torch-disable-jit=yes",
     "--windows-console-mode=disable",
     "--remove-output",
     "--output-dir=$nuitkaOutputRoot",
@@ -89,10 +96,16 @@ $nuitkaArgs = @(
     $entryScript
 )
 
-if (Test-PythonModule -PythonExe $EnvPython -ModuleName "win32com") {
+switch ($CompilerBackend) {
+    "mingw64" { $nuitkaArgs += "--mingw64" }
+    "zig" { $nuitkaArgs += "--zig" }
+    "msvc" { $nuitkaArgs += "--msvc=latest" }
+}
+
+if ($IncludeWordAutomation -and (Test-PythonModule -PythonExe $EnvPython -ModuleName "win32com")) {
     $nuitkaArgs += "--include-package=win32com"
 }
-if (Test-PythonModule -PythonExe $EnvPython -ModuleName "comtypes") {
+if ($IncludeWordAutomation -and (Test-PythonModule -PythonExe $EnvPython -ModuleName "comtypes")) {
     $nuitkaArgs += "--include-package=comtypes"
 }
 
@@ -102,6 +115,11 @@ if ($IncludeRuntimeCache -and (Test-Path (Join-Path $dataRoot "contract_review_r
 
 Write-Step "Running Nuitka build"
 & $EnvPython @nuitkaArgs
+$nuitkaExitCode = $LASTEXITCODE
+
+if ($nuitkaExitCode -ne 0) {
+    throw "Nuitka build failed with exit code: $nuitkaExitCode"
+}
 
 $compiledDist = Join-Path $nuitkaOutputRoot "main.dist"
 Assert-PathExists $compiledDist "Nuitka output directory"

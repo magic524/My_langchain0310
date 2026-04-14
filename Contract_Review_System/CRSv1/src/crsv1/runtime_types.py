@@ -10,6 +10,7 @@ class ReviewPromptContext:
 
     review_stance: str = ""
     extra_user_instruction: str = ""
+    display_risk_levels: list[str] = field(default_factory=lambda: ["missing", "high", "low"])
 
 
 @dataclass(slots=True)

@@ -14,6 +14,7 @@ try:
     from PyQt6.QtGui import QDesktopServices, QTextCursor
     from PyQt6.QtWidgets import (
         QApplication,
+        QCheckBox,
         QComboBox,
         QFileDialog,
         QFrame,
@@ -141,16 +142,29 @@ class ContractReviewMainWindow(QMainWindow):
         self.extra_prompt_edit.setPlaceholderText("可补充本次审查重点；不填写时按默认规则审查。")
         self.extra_prompt_edit.setPlainText(DEFAULT_REMARK_EXAMPLE)
         self.extra_prompt_edit.setMinimumHeight(180)
+        self.missing_risk_checkbox = QCheckBox("信息缺失风险")
+        self.missing_risk_checkbox.setChecked(True)
+        self.high_risk_checkbox = QCheckBox("高风险")
+        self.high_risk_checkbox.setChecked(True)
+        self.low_risk_checkbox = QCheckBox("低风险")
+        self.low_risk_checkbox.setChecked(True)
+        risk_level_row = QHBoxLayout()
+        risk_level_row.addWidget(self.missing_risk_checkbox)
+        risk_level_row.addWidget(self.high_risk_checkbox)
+        risk_level_row.addWidget(self.low_risk_checkbox)
+        risk_level_row.addStretch(1)
 
         input_layout.addWidget(QLabel("原合同"), 0, 0)
         input_layout.addWidget(self.input_path_edit, 0, 1)
         input_layout.addWidget(browse_button, 0, 2)
         input_layout.addWidget(QLabel("审查立场"), 1, 0)
         input_layout.addWidget(self.stance_combo, 1, 1, 1, 2)
+        input_layout.addWidget(QLabel("展示风险"), 2, 0)
+        input_layout.addLayout(risk_level_row, 2, 1, 1, 2)
         remark_label = QLabel("备注")
         remark_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
-        input_layout.addWidget(remark_label, 2, 0)
-        input_layout.addWidget(self.extra_prompt_edit, 2, 1, 1, 2)
+        input_layout.addWidget(remark_label, 3, 0)
+        input_layout.addWidget(self.extra_prompt_edit, 3, 1, 1, 2)
 
         action_row = QHBoxLayout()
         self.start_button = QPushButton("开始运行")
@@ -217,6 +231,7 @@ class ContractReviewMainWindow(QMainWindow):
             input_path=input_path,
             review_stance=str(self.stance_combo.currentData()),
             extra_user_instruction=self.extra_prompt_edit.toPlainText().strip(),
+            display_risk_levels=self._selected_display_risk_levels(),
         )
 
         self.latest_result = None
@@ -248,7 +263,20 @@ class ContractReviewMainWindow(QMainWindow):
         self.input_path_edit.setEnabled(enabled)
         self.stance_combo.setEnabled(enabled)
         self.extra_prompt_edit.setEnabled(enabled)
+        self.missing_risk_checkbox.setEnabled(enabled)
+        self.high_risk_checkbox.setEnabled(enabled)
+        self.low_risk_checkbox.setEnabled(enabled)
         self.start_button.setEnabled(enabled)
+
+    def _selected_display_risk_levels(self) -> list[str]:
+        levels: list[str] = []
+        if self.missing_risk_checkbox.isChecked():
+            levels.append("missing")
+        if self.high_risk_checkbox.isChecked():
+            levels.append("high")
+        if self.low_risk_checkbox.isChecked():
+            levels.append("low")
+        return levels or ["missing", "high", "low"]
 
     def _cleanup_worker(self) -> None:
         self.worker = None

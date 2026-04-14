@@ -302,7 +302,13 @@ def _comment_reference_run(comment_id: int) -> ET.Element:
 def _make_comment_body(risk: ClauseRisk) -> str:
     """Format comment body to match the reviewed style."""
 
+    level_label = {
+        "missing": "信息缺失风险",
+        "high": "高风险",
+        "low": "低风险",
+    }.get(risk.risk_level, risk.risk_level or "未标注")
     lines = [f"风险点：{risk.risk_title or '未命名风险'}"]
+    lines.append(f"风险级别：{level_label}")
     if risk.explanation:
         lines.append(f"说明：{risk.explanation}")
     if risk.suggestion:
@@ -442,12 +448,14 @@ def export_contract_comment_doc(contract_result: ContractReviewResult, output_di
 
     source_docx = resolve_source_docx(contract_result)
     output_docx = output_dir / f"{safe_filename(contract_result.contract_id)}_CRSv1批注版.docx"
-    comment_summary = annotate_docx_with_comments(source_docx, output_docx, contract_result.aggregated_risks)
+    selected_risks = contract_result.report_summary.get("selected_risks")
+    risks = selected_risks if isinstance(selected_risks, list) else contract_result.aggregated_risks
+    comment_summary = annotate_docx_with_comments(source_docx, output_docx, risks)
     return {
         "contract_id": contract_result.contract_id,
         "source_docx": str(source_docx),
         "output_docx": str(output_docx),
-        "risk_count": len(contract_result.aggregated_risks),
+        "risk_count": len(risks),
         "comment_count": len(comment_summary),
         "comments": comment_summary,
     }

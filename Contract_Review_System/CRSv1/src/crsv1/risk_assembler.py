@@ -4,6 +4,38 @@ from .runtime_types import ClauseReviewResult, ClauseRisk
 from .text_utils import text_similarity
 
 
+def normalize_display_risk_levels(levels: list[str] | None) -> list[str]:
+    """Normalize requested display risk levels while preserving order."""
+
+    if not levels:
+        return ["missing", "high", "low"]
+
+    aliases = {
+        "missing": "missing",
+        "缺失": "missing",
+        "信息缺失风险": "missing",
+        "high": "high",
+        "高": "high",
+        "高风险": "high",
+        "low": "low",
+        "低": "low",
+        "低风险": "low",
+    }
+    normalized: list[str] = []
+    for item in levels:
+        mapped = aliases.get(str(item).strip().lower()) or aliases.get(str(item).strip())
+        if mapped and mapped not in normalized:
+            normalized.append(mapped)
+    return normalized or ["missing", "high", "low"]
+
+
+def filter_risks_by_level(aggregated_risks: list[ClauseRisk], display_levels: list[str] | None) -> list[ClauseRisk]:
+    """Filter risks by selected display levels."""
+
+    allowed = set(normalize_display_risk_levels(display_levels))
+    return [risk for risk in aggregated_risks if risk.risk_level in allowed]
+
+
 def aggregate_clause_risks(clause_reviews: list[ClauseReviewResult]) -> list[ClauseRisk]:
     """Aggregate and deduplicate clause risks across parent tasks."""
 
@@ -23,6 +55,10 @@ def aggregate_clause_risks(clause_reviews: list[ClauseReviewResult]) -> list[Cla
                     duplicate.explanation = risk.explanation
                 if len(risk.suggestion) > len(duplicate.suggestion):
                     duplicate.suggestion = risk.suggestion
+                if risk.risk_level == "missing" and duplicate.risk_level != "missing":
+                    duplicate.risk_level = "missing"
+                elif risk.risk_level == "high" and duplicate.risk_level == "low":
+                    duplicate.risk_level = "high"
                 continue
             aggregated.append(risk)
     return aggregated

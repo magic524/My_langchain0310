@@ -10,6 +10,15 @@ from xml.sax.saxutils import escape
 from .runtime_types import ClauseRisk, ContractBackgroundBrief, ContractReviewResult
 
 
+def _display_risk_level(level: str) -> str:
+    mapping = {
+        "missing": "信息缺失风险",
+        "high": "高风险",
+        "low": "低风险",
+    }
+    return mapping.get(level, level or "未标注")
+
+
 def _xml_run(text: str, *, bold: bool = False) -> str:
     escaped = escape(text)
     run_properties = "<w:rPr><w:b/></w:rPr>" if bold else ""
@@ -121,16 +130,24 @@ def _build_background_lines(brief: ContractBackgroundBrief) -> list[str]:
     return lines
 
 
-def build_report_payload(contract_result: ContractReviewResult) -> dict[str, Any]:
+def build_report_payload(
+    contract_result: ContractReviewResult,
+    *,
+    selected_risks: list[ClauseRisk] | None = None,
+    selected_statistics: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """Build a report-oriented JSON payload from the structured review result."""
 
+    effective_risks = selected_risks if selected_risks is not None else contract_result.aggregated_risks
+    effective_statistics = selected_statistics if selected_statistics is not None else contract_result.risk_statistics
     risk_items: list[dict[str, Any]] = []
-    for index, risk in enumerate(contract_result.aggregated_risks, start=1):
+    for index, risk in enumerate(effective_risks, start=1):
         risk_items.append(
             {
                 "index": index,
                 "title": risk.risk_title or f"风险点{index}",
                 "risk_level": risk.risk_level,
+                "risk_level_label": _display_risk_level(risk.risk_level),
                 "risk_type": risk.risk_type,
                 "parent_clause_id": risk.parent_clause_id,
                 "target_clause_id": risk.target_clause_id,
@@ -144,8 +161,9 @@ def build_report_payload(contract_result: ContractReviewResult) -> dict[str, Any
     return {
         "contract_id": contract_result.contract_id,
         "background_brief": asdict(contract_result.background_brief),
-        "risk_statistics": contract_result.risk_statistics,
+        "risk_statistics": effective_statistics,
         "risk_items": risk_items,
+        "selected_risk_levels": list(contract_result.review_context.display_risk_levels),
     }
 
 
@@ -166,7 +184,7 @@ def build_docx_from_report_payload(report_payload: dict[str, Any], destination_d
     blocks.append(_xml_paragraph("二、风险点统计", style="Heading2"))
     statistic_rows: list[tuple[list[str], list[str]]] = [(["维度"], ["数量"]), (["风险总数"], [str(stats.get("risk_count", 0))])]
     for level, count in stats.get("by_level", {}).items():
-        statistic_rows.append(([f"等级：{level}"], [str(count)]))
+        statistic_rows.append(([f"等级：{_display_risk_level(level)}"], [str(count)]))
     for risk_type, count in stats.get("by_type", {}).items():
         statistic_rows.append(([f"类型：{risk_type}"], [str(count)]))
     blocks.append(_xml_table_two_columns(statistic_rows))
@@ -176,7 +194,7 @@ def build_docx_from_report_payload(report_payload: dict[str, Any], destination_d
         blocks.append(_xml_paragraph("本次未识别到结构化风险点。"))
     else:
         for risk in risk_items:
-            blocks.append(_xml_paragraph(f"{risk['index']}. {risk['title']}", style="Heading3"))
+            blocks.append(_xml_paragraph(f"{risk['index']}. {risk['title']}（{risk['risk_level_label']}）", style="Heading3"))
             blocks.append(
                 _xml_risk_detail_table(
                     risk.get("original_clause_text", "") or "无",
@@ -283,7 +301,11 @@ def export_contract_report(contract_result: ContractReviewResult, output_dir: Pa
     report_payload_path = output_dir / "report_payload.json"
     stats_path = output_dir / "risk_statistics.json"
 
-    report_payload = build_report_payload(contract_result)
+    report_payload = build_report_payload(
+        contract_result,
+        selected_risks=contract_result.report_summary.get("selected_risks"),
+        selected_statistics=contract_result.report_summary.get("selected_statistics"),
+    )
     report_payload_path.write_text(json.dumps(report_payload, ensure_ascii=False, indent=2), encoding="utf-8")
     build_docx_from_report_payload(report_payload, report_docx_path)
     brief_json_path, brief_text_path = _write_background_brief_files(contract_result.background_brief, output_dir)
@@ -291,8 +313,9 @@ def export_contract_report(contract_result: ContractReviewResult, output_dir: Pa
         json.dumps(
             {
                 "contract_id": contract_result.contract_id,
-                "risk_statistics": contract_result.risk_statistics,
-                "aggregated_risks": [asdict(risk) for risk in contract_result.aggregated_risks],
+                "selected_risk_levels": list(contract_result.review_context.display_risk_levels),
+                "risk_statistics": report_payload["risk_statistics"],
+                "aggregated_risks": [asdict(risk) for risk in report_summary_risks(contract_result)],
             },
             ensure_ascii=False,
             indent=2,
@@ -306,3 +329,12 @@ def export_contract_report(contract_result: ContractReviewResult, output_dir: Pa
         "background_brief_json_path": str(brief_json_path),
         "background_brief_text_path": str(brief_text_path),
     }
+
+
+def report_summary_risks(contract_result: ContractReviewResult) -> list[ClauseRisk]:
+    """Return the risks that should appear in report artifacts."""
+
+    selected_risks = contract_result.report_summary.get("selected_risks")
+    if isinstance(selected_risks, list):
+        return selected_risks
+    return contract_result.aggregated_risks

@@ -68,7 +68,7 @@ def build_clause_review_messages(
       "target_clause_id": "命中的子条款ID，没有则填父条款ID",
       "target_text": "尽量精确的原文片段",
       "risk_title": "风险标题",
-      "risk_level": "high|medium|low",
+      "risk_level": "missing|high|low",
       "risk_type": "付款|违约|解约|责任限制|保密|知识产权|争议解决|其他",
       "explanation": "风险说明",
       "suggestion": "修改建议",
@@ -76,6 +76,7 @@ def build_clause_review_messages(
     }
   ]
 }""",
+        "风险级别定义：missing 表示合同信息缺失、空白、未约定、约定不完整；high 表示存在明显不利、失衡、违法或重大争议风险；low 表示存在优化空间但通常不构成重大障碍。",
         f"合同类型：{background_brief.contract_type}",
         f"交易目标：{background_brief.transaction_purpose}",
         f"角色概述：{background_brief.parties_summary}",

@@ -156,9 +156,29 @@ def _salvage_risk_items(text: str) -> list[dict[str, Any]]:
 
 def _normalize_risk_level(value: str) -> str:
     normalized = value.strip().lower()
-    if normalized not in {"high", "medium", "low"}:
-        return "medium"
-    return normalized
+    aliases = {
+        "缺失": "missing",
+        "信息缺失风险": "missing",
+        "missing": "missing",
+        "high": "high",
+        "高": "high",
+        "高风险": "high",
+        "low": "low",
+        "低": "low",
+        "低风险": "low",
+        "medium": "low",
+        "中": "low",
+        "中风险": "low",
+    }
+    if normalized in aliases:
+        return aliases[normalized]
+    if "缺失" in normalized or "空白" in normalized or "未约定" in normalized:
+        return "missing"
+    if "高" in normalized or "重大" in normalized:
+        return "high"
+    if "低" in normalized or "中" in normalized:
+        return "low"
+    return "high"
 
 
 def _iter_nodes(nodes: list[ClauseNode]) -> list[ClauseNode]:

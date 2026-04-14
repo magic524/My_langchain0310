@@ -138,6 +138,7 @@ def run_contract_review_pipeline(
     reuse_raw_responses: bool = False,
     review_stance: str | None = None,
     extra_user_instruction: str = "",
+    display_risk_levels: list[str] | None = None,
     progress_callback: ProgressCallback | None = None,
     log_callback: LogCallback | None = None,
 ) -> dict[str, str]:
@@ -156,6 +157,7 @@ def run_contract_review_pipeline(
     _append_log(log_path, f"输入文件：{resolve_path(input_value)}", log_callback=log_callback)
     _append_log(log_path, f"审查立场：{(review_stance or '').strip().lower() or 'default'}", log_callback=log_callback)
     _append_log(log_path, f"用户补充提示：{'已填写' if extra_user_instruction.strip() else '未填写'}", log_callback=log_callback)
+    _append_log(log_path, f"展示风险等级：{','.join(display_risk_levels or ['missing', 'high', 'low'])}", log_callback=log_callback)
     _append_log(log_path, f"模型请求超时：{runtime.request_timeout_seconds} 秒/次", log_callback=log_callback)
     clause_review_workers = _resolve_clause_review_workers(runtime)
     _append_log(log_path, f"父条款并行审查数：{clause_review_workers}", log_callback=log_callback)
@@ -194,6 +196,7 @@ def run_contract_review_pipeline(
         reuse_raw_responses=reuse_raw_responses,
         review_stance=review_stance,
         extra_user_instruction=extra_user_instruction,
+        display_risk_levels=display_risk_levels,
         max_workers=clause_review_workers,
         progress_callback=(
             (lambda value, message: _report_progress(progress_callback, min(95, max(30, value)), message))
@@ -243,6 +246,7 @@ def run_contract_review_pipeline(
         "failed_contracts": len(failed_results),
         "review_stance": (review_stance or "").strip().lower(),
         "extra_user_instruction": extra_user_instruction.strip(),
+        "display_risk_levels": list(display_risk_levels or ["missing", "high", "low"]),
     }
     _write_json(summary_path, summary_payload)
     _report_progress(progress_callback, 100, "阶段：完成")

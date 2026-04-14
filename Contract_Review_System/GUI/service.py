@@ -33,6 +33,7 @@ class GuiReviewRequest:
     input_path: str
     review_stance: str
     extra_user_instruction: str = ""
+    display_risk_levels: list[str] | None = None
 
 
 @dataclass(slots=True)
@@ -91,6 +92,7 @@ class GuiPipelineService:
             word2md_output_root=self.word2md_output_root,
             review_stance=request.review_stance,
             extra_user_instruction=request.extra_user_instruction,
+            display_risk_levels=request.display_risk_levels,
             progress_callback=progress_callback,
             log_callback=log_callback,
         )

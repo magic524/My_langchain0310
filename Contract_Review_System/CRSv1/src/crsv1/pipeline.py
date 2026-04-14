@@ -12,7 +12,12 @@ from .clause_tree_parser import build_review_tasks, parse_clause_tree
 from .input_adapter import load_contract_bundles
 from .report_export import export_contract_report
 from .review_executor import run_background_brief, run_clause_review_tasks
-from .risk_assembler import aggregate_clause_risks, build_risk_statistics
+from .risk_assembler import (
+    aggregate_clause_risks,
+    build_risk_statistics,
+    filter_risks_by_level,
+    normalize_display_risk_levels,
+)
 from .runtime_types import CRSv1ResultPayload, ContractReviewResult, ReviewPromptContext
 from .word_comment_export import export_contract_comment_doc
 
@@ -39,6 +44,7 @@ def run_crsv1_review_for_result(
     output_dir: Path,
     review_stance: str | None = None,
     extra_user_instruction: str = "",
+    display_risk_levels: list[str] | None = None,
     reuse_raw_responses: bool = False,
     max_workers: int = 1,
     progress_callback: ProgressCallback | None = None,
@@ -49,6 +55,7 @@ def run_crsv1_review_for_result(
     prompt_context = ReviewPromptContext(
         review_stance=(review_stance or "").strip().lower(),
         extra_user_instruction=extra_user_instruction.strip(),
+        display_risk_levels=normalize_display_risk_levels(display_risk_levels),
     )
     raw_dir = output_dir / "raw_responses"
     debug_dir = output_dir / "debug_requests"
@@ -98,7 +105,8 @@ def run_crsv1_review_for_result(
     if log_callback is not None:
         log_callback(f"CRSv1：开始风险组装：{contract_id}")
     aggregated_risks = aggregate_clause_risks(clause_reviews)
-    risk_statistics = build_risk_statistics(aggregated_risks)
+    selected_risks = filter_risks_by_level(aggregated_risks, prompt_context.display_risk_levels)
+    risk_statistics = build_risk_statistics(selected_risks)
     if log_callback is not None:
         log_callback(f"CRSv1：风险组装完成：{contract_id}，聚合风险 {len(aggregated_risks)} 个")
     return ContractReviewResult(
@@ -114,6 +122,8 @@ def run_crsv1_review_for_result(
             "background_raw_path": background_raw_path,
             "task_count": len(tasks),
             "clause_review_count": len(clause_reviews),
+            "selected_risks": selected_risks,
+            "selected_statistics": risk_statistics,
         },
     )
 
@@ -128,6 +138,7 @@ def run_crsv1_prediction(
     contract_filter: str | None = None,
     review_stance: str | None = None,
     extra_user_instruction: str = "",
+    display_risk_levels: list[str] | None = None,
     max_workers: int = 1,
     progress_callback: ProgressCallback | None = None,
     log_callback: LogCallback | None = None,
@@ -165,6 +176,7 @@ def run_crsv1_prediction(
             output_dir=contract_output_dir,
             review_stance=review_stance,
             extra_user_instruction=extra_user_instruction,
+            display_risk_levels=display_risk_levels,
             reuse_raw_responses=reuse_raw_responses,
             max_workers=max_workers,
             progress_callback=progress_callback,
@@ -196,6 +208,7 @@ def run_crsv1_prediction(
             "contract_count": len(contracts),
             "review_stance": (review_stance or "").strip().lower(),
             "extra_user_instruction": extra_user_instruction.strip(),
+            "display_risk_levels": normalize_display_risk_levels(display_risk_levels),
             "max_workers": max_workers,
         },
         warnings=warnings,

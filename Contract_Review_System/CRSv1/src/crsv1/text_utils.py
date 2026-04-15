@@ -5,13 +5,13 @@ from difflib import SequenceMatcher
 
 
 def compact_text(text: str) -> str:
-    """Collapse repeated whitespace while preserving readability."""
+    """压缩重复空白，保留可读性。"""
 
     return re.sub(r"\s+", " ", text).strip()
 
 
 def normalize_text(text: str) -> str:
-    """Normalize text for fuzzy matching and title comparison."""
+    """规范化文本，用于模糊匹配和标题比较。"""
 
     cleaned = str(text)
     cleaned = re.sub(r"[`*_>#\[\]()~|]", "", cleaned)
@@ -22,7 +22,7 @@ def normalize_text(text: str) -> str:
 
 
 def short_preview(text: str, *, limit: int = 80) -> str:
-    """Build a short preview for logs and fallback headings."""
+    """生成短预览文本，用于日志和回退标题。"""
 
     compact = compact_text(text)
     if len(compact) <= limit:
@@ -31,14 +31,14 @@ def short_preview(text: str, *, limit: int = 80) -> str:
 
 
 def safe_filename(value: str) -> str:
-    """Convert an identifier to a filesystem-safe filename."""
+    """将标识符转换为文件系统安全文件名。"""
 
     cleaned = "".join(char if char not in '<>:"/\\|?*' else "_" for char in str(value)).strip().rstrip(".")
     return cleaned or "output"
 
 
 def text_similarity(left: str, right: str) -> float:
-    """Compute a simple similarity score for deduplication and matching."""
+    """计算文本相似度，用于去重与锚点匹配。"""
 
     left_norm = normalize_text(left)
     right_norm = normalize_text(right)

@@ -12,7 +12,7 @@ DEFAULT_WORD2MD_OUTPUT_ROOT = REPO_ROOT / "data" / "contract_review_outputs" / "
 
 
 def resolve_optional_path(path_str: str) -> Path:
-    """Resolve an optional path string from repo-relative or absolute form."""
+    """将可选路径解析为绝对路径（支持相对仓库根目录）。"""
 
     candidate = Path(path_str).expanduser()
     if candidate.is_absolute():
@@ -21,7 +21,7 @@ def resolve_optional_path(path_str: str) -> Path:
 
 
 def resolve_run_root(run_id: str, *, explicit_run_root: Path | None = None) -> Path:
-    """Resolve a word2md run root from either explicit directory or run id."""
+    """根据显式目录或 run_id 解析 word2md 批次目录。"""
 
     if explicit_run_root is not None:
         return explicit_run_root.resolve()
@@ -29,6 +29,7 @@ def resolve_run_root(run_id: str, *, explicit_run_root: Path | None = None) -> P
 
 
 def _read_json(path: Path) -> dict:
+    # 输入 JSON 要求根节点是对象，便于后续按键访问。
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         msg = f"JSON root must be an object: {path}"
@@ -37,7 +38,7 @@ def _read_json(path: Path) -> dict:
 
 
 def load_contract_bundles(run_id: str, *, run_root: Path | None = None) -> tuple[list[ContractInputBundle], list[str], Path]:
-    """Load normalized contract bundles from one word2md run."""
+    """从一次 word2md 运行结果中加载并标准化合同输入。"""
 
     resolved_root = resolve_run_root(run_id, explicit_run_root=run_root)
     summary_path = resolved_root / "run_summary.json"
@@ -49,6 +50,7 @@ def load_contract_bundles(run_id: str, *, run_root: Path | None = None) -> tuple
         if not isinstance(result, dict):
             continue
         if str(result.get("status", "")) != "ok":
+            # word2md 失败样本仅记录告警，不阻断整批处理。
             sample_id = str(result.get("sample_id", "")).strip()
             warnings.append(f"{sample_id}: word2md failed")
             continue

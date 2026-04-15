@@ -11,6 +11,7 @@ from .runtime_types import ClauseRisk, ContractBackgroundBrief, ContractReviewRe
 
 
 def _display_risk_level(level: str) -> str:
+    # 报告展示层使用中文标签。
     mapping = {
         "missing": "信息缺失风险",
         "high": "高风险",
@@ -20,6 +21,7 @@ def _display_risk_level(level: str) -> str:
 
 
 def _xml_run(text: str, *, bold: bool = False) -> str:
+    # 直接拼接 WordprocessingML 片段，避免引入额外 docx 依赖。
     escaped = escape(text)
     run_properties = "<w:rPr><w:b/></w:rPr>" if bold else ""
     return f'<w:r>{run_properties}<w:t xml:space="preserve">{escaped}</w:t></w:r>'
@@ -136,7 +138,7 @@ def build_report_payload(
     selected_risks: list[ClauseRisk] | None = None,
     selected_statistics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Build a report-oriented JSON payload from the structured review result."""
+    """把结构化审查结果转换为报告导向的 JSON 载荷。"""
 
     effective_risks = selected_risks if selected_risks is not None else contract_result.aggregated_risks
     effective_statistics = selected_statistics if selected_statistics is not None else contract_result.risk_statistics
@@ -168,7 +170,7 @@ def build_report_payload(
 
 
 def build_docx_from_report_payload(report_payload: dict[str, Any], destination_docx: Path) -> Path:
-    """Render a structured report payload into a Word document."""
+    """将报告载荷渲染为 Word 文档。"""
 
     title = f"关于《{report_payload['contract_id']}》的审查意见书"
     brief = ContractBackgroundBrief(**report_payload.get("background_brief", {}))
@@ -274,6 +276,7 @@ def build_docx_from_report_payload(report_payload: dict[str, Any], destination_d
     )
 
     destination_docx.parent.mkdir(parents=True, exist_ok=True)
+    # 通过 zipfile 手工组装最小可打开 docx 包结构。
     with zipfile.ZipFile(destination_docx, "w") as archive:
         archive.writestr("[Content_Types].xml", content_types_xml)
         archive.writestr("_rels/.rels", package_rels_xml)
@@ -286,6 +289,7 @@ def build_docx_from_report_payload(report_payload: dict[str, Any], destination_d
 
 
 def _write_background_brief_files(brief: ContractBackgroundBrief, output_dir: Path) -> tuple[Path, Path]:
+    # 同时落地 JSON 与可读文本，便于程序消费和人工查看。
     brief_json_path = output_dir / "contract_background_brief.json"
     brief_text_path = output_dir / "合同背景摘要.txt"
     brief_json_path.write_text(json.dumps(asdict(brief), ensure_ascii=False, indent=2), encoding="utf-8")
@@ -294,7 +298,7 @@ def _write_background_brief_files(brief: ContractBackgroundBrief, output_dir: Pa
 
 
 def export_contract_report(contract_result: ContractReviewResult, output_dir: Path) -> dict[str, str]:
-    """Export report docx/json artifacts directly from structured CRSv1 data."""
+    """从 CRSv1 结构化结果导出报告相关产物。"""
 
     output_dir.mkdir(parents=True, exist_ok=True)
     report_docx_path = output_dir / "审查报告.docx"
@@ -332,7 +336,7 @@ def export_contract_report(contract_result: ContractReviewResult, output_dir: Pa
 
 
 def report_summary_risks(contract_result: ContractReviewResult) -> list[ClauseRisk]:
-    """Return the risks that should appear in report artifacts."""
+    """返回应进入报告产物的风险集合。"""
 
     selected_risks = contract_result.report_summary.get("selected_risks")
     if isinstance(selected_risks, list):

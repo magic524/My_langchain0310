@@ -6,7 +6,7 @@ from typing import Any
 
 @dataclass(slots=True)
 class ReviewPromptContext:
-    """Prompt preferences for one CRSv1 run."""
+    """单次 CRSv1 运行的提示词上下文配置。"""
 
     review_stance: str = ""
     extra_user_instruction: str = ""
@@ -15,7 +15,7 @@ class ReviewPromptContext:
 
 @dataclass(slots=True)
 class ContractBackgroundBrief:
-    """Whole-contract background summary for downstream clause review."""
+    """合同全局背景摘要，供后续分条款审查复用。"""
 
     contract_type: str = ""
     transaction_purpose: str = ""
@@ -29,7 +29,7 @@ class ContractBackgroundBrief:
 
 @dataclass(slots=True)
 class ClauseNode:
-    """One node in the contract clause tree."""
+    """合同条款树中的一个节点。"""
 
     node_id: str
     contract_id: str
@@ -46,7 +46,7 @@ class ClauseNode:
 
 @dataclass(slots=True)
 class ClauseReviewTask:
-    """A review task centered on one parent clause."""
+    """以一个父条款为中心构建的审查任务。"""
 
     task_id: str
     contract_id: str
@@ -59,7 +59,7 @@ class ClauseReviewTask:
 
 @dataclass(slots=True)
 class ClauseRisk:
-    """Structured risk output for CRSv1."""
+    """CRSv1 输出的结构化风险项。"""
 
     risk_id: str
     contract_id: str
@@ -79,7 +79,7 @@ class ClauseRisk:
 
 @dataclass(slots=True)
 class ClauseReviewResult:
-    """Review result for one parent clause task."""
+    """单个父条款任务的审查结果。"""
 
     task_id: str
     contract_id: str
@@ -93,7 +93,7 @@ class ClauseReviewResult:
 
 @dataclass(slots=True)
 class ContractReviewResult:
-    """CRSv1 single-contract output."""
+    """CRSv1 对单份合同的完整输出结果。"""
 
     contract_id: str
     source_files: dict[str, str]
@@ -108,7 +108,7 @@ class ContractReviewResult:
 
 @dataclass(slots=True)
 class ContractInputBundle:
-    """Minimal normalized contract input loaded from word2md output."""
+    """从 word2md 输出加载并标准化后的合同输入。"""
 
     contract_id: str
     source_files: dict[str, str]
@@ -118,7 +118,7 @@ class ContractInputBundle:
 
 @dataclass(slots=True)
 class CRSv1ResultPayload:
-    """Top-level CRSv1 result payload."""
+    """CRSv1 批量运行的顶层结果载荷。"""
 
     meta: dict[str, Any]
     warnings: list[str]

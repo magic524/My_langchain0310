@@ -17,6 +17,7 @@ BOLD_RE = re.compile(r"^\*\*(.+?)\*\*$")
 
 
 def _clean_line(line: str) -> str:
+    # 去掉空行和图片占位行，避免影响条款结构识别。
     stripped = line.strip()
     if not stripped or stripped == "<!-- image -->":
         return ""
@@ -24,7 +25,7 @@ def _clean_line(line: str) -> str:
 
 
 def _match_heading(line: str) -> tuple[str, str, str]:
-    """Classify one line as a candidate heading."""
+    """识别一行是否为标题，并返回标题类型、标题文本、编号标记。"""
 
     if line.startswith("#"):
         return "markdown_heading", line.lstrip("#").strip(), ""
@@ -75,12 +76,14 @@ def _resolve_heading_level(
     stack: list[ClauseNode],
     previous_heading_type: str,
 ) -> int:
-    """Infer heading level from numbering style and local context."""
+    """根据编号样式和局部上下文推断层级。"""
 
     if heading_type in {"bold_heading", "article_top", "chinese_top", "preface_top"}:
+        # 顶层标题直接归为一级。
         return 1
 
     if heading_type == "arabic_item":
+        # 阿拉伯编号可能是一级也可能是二级，这里结合父栈和前一标题类型判定。
         parent_heading_types = {node.heading_type for node in stack[1:]}
         if parent_heading_types & {"bold_heading", "article_top", "chinese_top", "preface_top"}:
             return 2
@@ -89,6 +92,7 @@ def _resolve_heading_level(
         return 1
 
     if heading_type == "arabic_decimal":
+        # 形如 1.2.3 的层级通常由小数段数决定，同时尝试贴近最近父级语境。
         segments = marker.split(".")
         if len(segments) == 1:
             return 2
@@ -115,6 +119,7 @@ def _normalize_heading_type(heading_type: str, level: int) -> str:
 
 
 def _finalize_node(node: ClauseNode) -> None:
+    # 每个节点最终文本 = 标题 + 正文，供后续提示词和报告直接使用。
     body = "\n".join(node.body_lines).strip()
     node.full_text = "\n".join(part for part in [node.heading.strip(), body] if part).strip()
     if not node.full_text:
@@ -138,7 +143,7 @@ def _make_preface_node(contract_id: str, node_id: str, lines: list[str], line_en
 
 
 def parse_clause_tree(contract_id: str, markdown_text: str) -> list[ClauseNode]:
-    """Parse contract markdown into a clause tree with stable parent nodes."""
+    """将合同 Markdown 解析为条款树。"""
 
     cleaned_lines = [
         (index, _clean_line(raw_line))
@@ -171,6 +176,7 @@ def parse_clause_tree(contract_id: str, markdown_text: str) -> list[ClauseNode]:
             level = _resolve_heading_level(heading_type, marker, stack, previous_heading_type)
             normalized_heading_type = _normalize_heading_type(heading_type, level)
 
+            # 通过栈回退找到当前标题的父节点。
             while len(stack) > 1 and stack[-1].level >= level:
                 _finalize_node(stack.pop())
 
@@ -194,6 +200,7 @@ def parse_clause_tree(contract_id: str, markdown_text: str) -> list[ClauseNode]:
 
         current = stack[-1]
         if current is root:
+            # 根节点正文当作前言候选，在最后补成“前言与合同主体”节点。
             preface_lines.append(line)
             preface_end_line = line_no
             continue
@@ -217,6 +224,7 @@ def parse_clause_tree(contract_id: str, markdown_text: str) -> list[ClauseNode]:
     _finalize_node(root)
 
     if not root.children:
+        # 极端情况下未识别到任何标题，退化为“全文条款”单节点，避免后续流程中断。
         synthetic = ClauseNode(
             node_id=f"{contract_id}_n001",
             contract_id=contract_id,
@@ -235,7 +243,7 @@ def parse_clause_tree(contract_id: str, markdown_text: str) -> list[ClauseNode]:
 
 
 def iter_clause_nodes(nodes: list[ClauseNode]) -> list[ClauseNode]:
-    """Return clause nodes in preorder traversal."""
+    """按先序遍历展开条款树。"""
 
     ordered: list[ClauseNode] = []
     for node in nodes:
@@ -245,10 +253,11 @@ def iter_clause_nodes(nodes: list[ClauseNode]) -> list[ClauseNode]:
 
 
 def build_review_tasks(contract_id: str, clause_tree: list[ClauseNode]) -> list[ClauseReviewTask]:
-    """Build review tasks using top-level parent clauses as review units."""
+    """以顶层父条款为单位构造审查任务。"""
 
     tasks: list[ClauseReviewTask] = []
     for index, node in enumerate(clause_tree, start=1):
+        # 子条款会拼入同一个任务上下文，便于模型做父-子条款一致性判断。
         child_nodes = iter_clause_nodes(node.children)
         prompt_lines = [
             f"父条款标题：{node.heading}",
@@ -275,6 +284,6 @@ def build_review_tasks(contract_id: str, clause_tree: list[ClauseNode]) -> list[
 
 
 def serialize_clause_tree(nodes: list[ClauseNode]) -> list[dict]:
-    """Serialize a clause tree to plain dicts."""
+    """将条款树序列化为普通字典结构。"""
 
     return [asdict(node) for node in nodes]

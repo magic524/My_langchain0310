@@ -31,6 +31,7 @@ LogCallback = Callable[[str], None]
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    # 统一 JSON 写盘入口，确保目录存在且 UTF-8 编码。
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -50,7 +51,7 @@ def run_crsv1_review_for_result(
     progress_callback: ProgressCallback | None = None,
     log_callback: LogCallback | None = None,
 ) -> ContractReviewResult:
-    """Run CRSv1 on one contract markdown input."""
+    """对单份合同执行 CRSv1 全流程并返回结构化结果。"""
 
     prompt_context = ReviewPromptContext(
         review_stance=(review_stance or "").strip().lower(),
@@ -64,12 +65,14 @@ def run_crsv1_review_for_result(
 
     if log_callback is not None:
         log_callback(f"CRSv1：开始条款切分：{contract_id}")
+    # 第一步：将合同切分为条款树，并以父条款构造审查任务。
     clause_tree = parse_clause_tree(contract_id, markdown_text)
     tasks = build_review_tasks(contract_id, clause_tree)
     if log_callback is not None:
         log_callback(f"CRSv1：条款切分完成：{contract_id}，父条款 {len(tasks)} 个")
     if progress_callback is not None:
         progress_callback(40, "CRSv1：生成合同背景摘要")
+    # 第二步：先抽取全局背景，后续每个父条款审查都复用这份上下文。
     background_brief, background_raw_path = run_background_brief(
         contract_id,
         markdown_text,
@@ -82,6 +85,7 @@ def run_crsv1_review_for_result(
     )
     if progress_callback is not None:
         progress_callback(50, "CRSv1：按父条款执行审查")
+    # 第三步：逐个父条款审查，可按 max_workers 并发执行。
     clause_reviews = run_clause_review_tasks(
         contract_id,
         clause_tree,
@@ -104,6 +108,7 @@ def run_crsv1_review_for_result(
         progress_callback(75, "CRSv1：组装风险结果")
     if log_callback is not None:
         log_callback(f"CRSv1：开始风险组装：{contract_id}")
+    # 第四步：跨父条款去重聚合，并按展示级别过滤后统计。
     aggregated_risks = aggregate_clause_risks(clause_reviews)
     selected_risks = filter_risks_by_level(aggregated_risks, prompt_context.display_risk_levels)
     risk_statistics = build_risk_statistics(selected_risks)
@@ -143,7 +148,7 @@ def run_crsv1_prediction(
     progress_callback: ProgressCallback | None = None,
     log_callback: LogCallback | None = None,
 ) -> dict[str, str]:
-    """Run CRSv1 over one word2md batch output."""
+    """对一个 word2md 批次执行 CRSv1，并导出结果文件。"""
 
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -155,6 +160,7 @@ def run_crsv1_prediction(
             raise RuntimeError(msg)
 
     contracts: list[ContractReviewResult] = []
+    # 合同批注版会单独集中输出，便于用户直接查看修改建议。
     comment_output_dir = output_dir / "原合同批注版_CRSv1"
     comment_output_dir.mkdir(parents=True, exist_ok=True)
     contract_output_root = output_dir / "contracts"
@@ -215,6 +221,7 @@ def run_crsv1_prediction(
         contracts=contracts,
     )
     result_path = output_dir / "crsv1_result.json"
+    # 结构化总结果：保留完整合同级结果（包含条款树/风险详情）。
     _write_json(
         result_path,
         {
@@ -224,6 +231,7 @@ def run_crsv1_prediction(
         },
     )
     statistics_path = output_dir / "risk_statistics.json"
+    # 统计汇总：方便前端或脚本直接读取统计面板。
     _write_json(
         statistics_path,
         {
@@ -235,6 +243,7 @@ def run_crsv1_prediction(
         },
     )
     summary_path = output_dir / "review_summary.json"
+    # 轻量摘要：记录关键输出路径与主入口文件。
     _write_json(
         summary_path,
         {

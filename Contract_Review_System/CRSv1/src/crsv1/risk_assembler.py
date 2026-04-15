@@ -5,7 +5,7 @@ from .text_utils import text_similarity
 
 
 def normalize_display_risk_levels(levels: list[str] | None) -> list[str]:
-    """Normalize requested display risk levels while preserving order."""
+    """标准化展示风险级别，同时保持输入顺序。"""
 
     if not levels:
         return ["missing", "high", "low"]
@@ -30,14 +30,14 @@ def normalize_display_risk_levels(levels: list[str] | None) -> list[str]:
 
 
 def filter_risks_by_level(aggregated_risks: list[ClauseRisk], display_levels: list[str] | None) -> list[ClauseRisk]:
-    """Filter risks by selected display levels."""
+    """按展示级别过滤风险项。"""
 
     allowed = set(normalize_display_risk_levels(display_levels))
     return [risk for risk in aggregated_risks if risk.risk_level in allowed]
 
 
 def aggregate_clause_risks(clause_reviews: list[ClauseReviewResult]) -> list[ClauseRisk]:
-    """Aggregate and deduplicate clause risks across parent tasks."""
+    """跨父条款聚合并去重风险项。"""
 
     aggregated: list[ClauseRisk] = []
     for review in clause_reviews:
@@ -51,6 +51,7 @@ def aggregate_clause_risks(clause_reviews: list[ClauseReviewResult]) -> list[Cla
                     duplicate = existing
                     break
             if duplicate is not None:
+                # 命中重复时，采用“信息更完整 + 更高风险优先”的合并策略。
                 if len(risk.explanation) > len(duplicate.explanation):
                     duplicate.explanation = risk.explanation
                 if len(risk.suggestion) > len(duplicate.suggestion):
@@ -65,7 +66,7 @@ def aggregate_clause_risks(clause_reviews: list[ClauseReviewResult]) -> list[Cla
 
 
 def build_risk_statistics(aggregated_risks: list[ClauseRisk]) -> dict:
-    """Build high-level statistics for reports and tables."""
+    """构建报告与表格所需的统计汇总。"""
 
     by_level: dict[str, int] = {}
     by_type: dict[str, int] = {}

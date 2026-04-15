@@ -96,7 +96,7 @@ class AnchorMatch:
 
 
 def paragraph_text(paragraph: ET.Element) -> str:
-    """Return visible paragraph text from a Word paragraph."""
+    """提取 Word 段落中的可见文本。"""
 
     parts: list[str] = []
     for node in paragraph.iter():
@@ -120,7 +120,7 @@ def _dedupe_nonempty(values: list[str]) -> list[str]:
 
 
 def extract_paragraphs(document_root: ET.Element) -> list[ParagraphRecord]:
-    """Extract visible paragraphs and lightweight context candidates."""
+    """提取可见段落，并生成轻量上下文候选文本。"""
 
     paragraph_elements = document_root.findall(".//w:p", NS)
     visible_texts = [paragraph_text(item) for item in paragraph_elements]
@@ -159,7 +159,7 @@ def _score_candidate(candidate: str, target: str) -> float:
 
 
 def find_best_anchor(paragraphs: list[ParagraphRecord], risk: ClauseRisk) -> AnchorMatch:
-    """Find the best paragraph anchor for one risk item."""
+    """为单个风险项找到最优段落锚点。"""
 
     if not paragraphs:
         raise ValueError("No paragraphs available for anchoring")
@@ -184,6 +184,7 @@ def find_best_anchor(paragraphs: list[ParagraphRecord], risk: ClauseRisk) -> Anc
 
     best_match: AnchorMatch | None = None
     for paragraph in paragraphs:
+        # 先比对当前段落，再比对“前后文拼接候选”，提升命中率。
         best_score = 0.0
         best_strategy = "similarity"
         for search_text in search_texts:
@@ -231,7 +232,7 @@ def find_best_anchor(paragraphs: list[ParagraphRecord], risk: ClauseRisk) -> Anc
 
 
 def _preserve_document_root(serialized_xml: bytes, original_xml: bytes) -> bytes:
-    """Preserve the original document root declarations for compatibility."""
+    """保留原始 document 根节点声明，减少 Office 兼容性问题。"""
 
     serialized_text = serialized_xml.decode("utf-8")
     original_text = original_xml.decode("utf-8")
@@ -300,7 +301,7 @@ def _comment_reference_run(comment_id: int) -> ET.Element:
 
 
 def _make_comment_body(risk: ClauseRisk) -> str:
-    """Format comment body to match the reviewed style."""
+    """按审阅风格格式化批注正文。"""
 
     level_label = {
         "missing": "信息缺失风险",
@@ -353,7 +354,7 @@ def _insert_range_markers(paragraphs_by_index: dict[int, ParagraphRecord], match
 
 
 def resolve_source_docx(contract_result: ContractReviewResult) -> Path:
-    """Resolve the actual source docx for annotation."""
+    """解析用于批注的原始 docx 路径。"""
 
     source_files = contract_result.source_files
     original_doc = Path(str(source_files.get("original_doc", "")))
@@ -373,7 +374,7 @@ def resolve_source_docx(contract_result: ContractReviewResult) -> Path:
 
 
 def annotate_docx_with_comments(source_docx: Path, output_docx: Path, risks: list[ClauseRisk]) -> list[dict[str, Any]]:
-    """Copy a docx and inject Word comments for CRSv1 risks."""
+    """复制原 docx 并注入 CRSv1 风险批注。"""
 
     output_docx.parent.mkdir(parents=True, exist_ok=True)
     if not risks:
@@ -407,6 +408,7 @@ def annotate_docx_with_comments(source_docx: Path, output_docx: Path, risks: lis
 
     summary: list[dict[str, Any]] = []
     for risk in risks:
+        # 每条风险生成一个评论节点，并把锚点策略记录到 summary 里用于调试。
         match = find_best_anchor(paragraphs, risk)
         comment_id = next_comment_id
         next_comment_id += 1
@@ -444,7 +446,7 @@ def annotate_docx_with_comments(source_docx: Path, output_docx: Path, risks: lis
 
 
 def export_contract_comment_doc(contract_result: ContractReviewResult, output_dir: Path) -> dict[str, Any]:
-    """Export one annotated docx file for a contract result."""
+    """导出单份合同的批注版 docx。"""
 
     source_docx = resolve_source_docx(contract_result)
     output_docx = output_dir / f"{safe_filename(contract_result.contract_id)}_CRSv1批注版.docx"

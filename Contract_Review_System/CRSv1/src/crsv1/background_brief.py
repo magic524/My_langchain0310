@@ -8,6 +8,7 @@ from .text_utils import short_preview
 
 
 def _extract_last_json_object(text: str) -> dict[str, Any]:
+    # 模型可能输出多段文本，这里从后向前提取最后一个 JSON 对象。
     stripped = text.strip()
     if not stripped:
         return {}
@@ -27,10 +28,11 @@ def _extract_last_json_object(text: str) -> dict[str, Any]:
 
 
 def parse_background_brief(raw_text: str, contract_text: str) -> ContractBackgroundBrief:
-    """Parse background JSON, falling back to lightweight heuristics."""
+    """解析背景摘要 JSON；失败时回退到轻量启发式摘要。"""
 
     payload = _extract_last_json_object(raw_text)
     if not payload:
+        # 回退策略：使用合同前几行构造可用背景，保证下游不断流。
         first_nonempty_lines = [line.strip() for line in contract_text.splitlines() if line.strip()]
         preview = " / ".join(first_nonempty_lines[:3])
         return ContractBackgroundBrief(
@@ -45,6 +47,7 @@ def parse_background_brief(raw_text: str, contract_text: str) -> ContractBackgro
         )
 
     def _list_value(key: str) -> list[str]:
+        # 兼容模型把数组字段错误返回成字符串的情况。
         value = payload.get(key, [])
         if isinstance(value, list):
             return [str(item).strip() for item in value if str(item).strip()]

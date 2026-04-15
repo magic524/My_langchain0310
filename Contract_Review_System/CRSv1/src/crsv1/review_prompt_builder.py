@@ -27,7 +27,7 @@ def build_background_messages(
     contract_text: str,
     prompt_context: ReviewPromptContext,
 ) -> list[tuple[str, str]]:
-    """Build the background-brief prompt messages."""
+    """构造“合同背景摘要”阶段的提示词消息。"""
 
     sections = [
         "请阅读下面这份合同全文，提炼后续多条款审查共用的背景摘要。",
@@ -43,6 +43,7 @@ def build_background_messages(
 }""",
     ]
     if prompt_context.review_stance == "party_a":
+        # 审查立场会影响模型关注点，但不改变输出 JSON 结构。
         sections.append("审查立场：优先站在甲方风险控制和条款完善角度理解合同。")
     elif prompt_context.review_stance == "party_b":
         sections.append("审查立场：优先站在乙方风险控制和条款完善角度理解合同。")
@@ -57,7 +58,7 @@ def build_clause_review_messages(
     task: ClauseReviewTask,
     prompt_context: ReviewPromptContext,
 ) -> list[tuple[str, str]]:
-    """Build prompt messages for one parent clause review task."""
+    """构造单个父条款审查任务的提示词消息。"""
 
     sections = [
         "请审查下面这个父条款范围，并把风险尽量定位到子条款或具体句子片段。",
@@ -83,6 +84,7 @@ def build_clause_review_messages(
         f"高风险主题：{'; '.join(background_brief.high_risk_topics)}",
         f"统一关注点：{'; '.join(background_brief.review_focus)}",
     ]
+    # 背景摘要与当前任务拼接，减少模型在单任务内重复理解成本。
     if prompt_context.review_stance == "party_a":
         sections.append("审查立场：站在甲方角度优先识别风险。")
     elif prompt_context.review_stance == "party_b":

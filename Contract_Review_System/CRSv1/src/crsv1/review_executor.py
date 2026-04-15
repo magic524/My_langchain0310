@@ -21,11 +21,13 @@ from .text_utils import safe_filename
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    # 调试请求与中间结果统一以 UTF-8 JSON 落盘。
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def _write_debug_request(path: Path, runtime: RuntimeConfig, messages: list[tuple[str, str]], note: str) -> None:
+    # 调试文件仅保留消息预览，避免把超长全文重复写入。
     payload = build_payload(runtime, messages, extra_body=runtime.extra_body)
     sanitized = dict(payload)
     sanitized["messages"] = [
@@ -41,7 +43,7 @@ def _write_debug_request(path: Path, runtime: RuntimeConfig, messages: list[tupl
 
 
 def send_chat(runtime: RuntimeConfig, messages: list[tuple[str, str]]) -> str:
-    """Send a chat request through the shared local LLM HTTP layer."""
+    """通过统一的本地 LLM HTTP 层发送对话请求。"""
 
     payload = build_payload(runtime, messages, extra_body=runtime.extra_body)
     return post_chat_request(runtime, payload)
@@ -58,7 +60,7 @@ def run_background_brief(
     reuse_raw_response: bool = False,
     log_callback: Any | None = None,
 ) -> tuple[ContractBackgroundBrief, str]:
-    """Generate a contract-level background brief."""
+    """生成合同级背景摘要。"""
 
     safe_contract_id = safe_filename(contract_id)
     raw_path = raw_dir / f"{safe_contract_id}.background.txt"
@@ -66,6 +68,7 @@ def run_background_brief(
     if log_callback is not None:
         log_callback(f"CRSv1：开始生成合同背景摘要：{contract_id}")
     if reuse_raw_response and raw_path.exists():
+        # 支持复用历史响应，便于离线复盘和调试。
         raw_text = raw_path.read_text(encoding="utf-8")
     else:
         messages = build_background_messages(contract_text, prompt_context)
@@ -79,6 +82,7 @@ def run_background_brief(
 
 
 def _extract_json_payload(raw_text: str) -> dict[str, Any]:
+    # 兼容模型输出中的 <think> 前缀或额外文本，尽量提取 JSON 主体。
     stripped = raw_text.strip()
     if not stripped:
         return {"risks": []}
@@ -114,7 +118,7 @@ def _extract_json_payload(raw_text: str) -> dict[str, Any]:
 
 
 def _salvage_risk_items(text: str) -> list[dict[str, Any]]:
-    """Best-effort recovery when the outer `risks` JSON is malformed."""
+    """当外层 `risks` JSON 损坏时，尽力抢救数组内对象。"""
 
     marker = '"risks"'
     marker_index = text.find(marker)
@@ -155,6 +159,7 @@ def _salvage_risk_items(text: str) -> list[dict[str, Any]]:
 
 
 def _normalize_risk_level(value: str) -> str:
+    # 将中英文、别名、模糊表述统一映射到 missing/high/low。
     normalized = value.strip().lower()
     aliases = {
         "缺失": "missing",
@@ -204,7 +209,7 @@ def parse_clause_review_result(
     clause_tree: list[ClauseNode],
     raw_text: str,
 ) -> ClauseReviewResult:
-    """Parse one parent-clause review result into structured risks."""
+    """将单个父条款审查响应解析为结构化风险。"""
 
     payload = _extract_json_payload(raw_text)
     risks_payload = payload.get("risks", [])
@@ -230,6 +235,7 @@ def parse_clause_review_result(
             source_excerpt=raw_text[:240].strip(),
         )
         if any([risk.target_text, risk.risk_title, risk.explanation, risk.suggestion]):
+            # 至少有一个核心字段时才保留，避免空壳风险污染统计。
             risks.append(risk)
 
     return ClauseReviewResult(
@@ -290,9 +296,10 @@ def run_clause_review_tasks(
     progress_callback: Any | None = None,
     log_callback: Any | None = None,
 ) -> list[ClauseReviewResult]:
-    """Run review tasks through a serial-or-threaded interface."""
+    """执行父条款审查任务，支持串行或线程池并发。"""
 
     if max_workers <= 1 or len(tasks) <= 1:
+        # 小批量或单线程模式：按原始任务顺序执行。
         results: list[ClauseReviewResult] = []
         total = max(len(tasks), 1)
         for index, task in enumerate(tasks, start=1):
@@ -335,6 +342,7 @@ def run_clause_review_tasks(
         total = max(len(tasks), 1)
         completed = 0
         for future in as_completed(future_to_index):
+            # 并发完成顺序不稳定，这里再写回原索引，保证结果顺序稳定。
             index = future_to_index[future]
             result = future.result()
             ordered_results[index - 1] = result

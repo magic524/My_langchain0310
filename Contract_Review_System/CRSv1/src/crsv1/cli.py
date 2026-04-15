@@ -11,12 +11,13 @@ from .pipeline import CRSV1_ROOT, run_crsv1_prediction
 
 
 def _default_output_root(run_id: str) -> Path:
+    # 默认输出目录按日期打标签，避免多次运行互相覆盖。
     date_tag = datetime.now().strftime("%Y%m%d")
     return (CRSV1_ROOT / "outputs" / f"{run_id}_crsv1_{date_tag}").resolve()
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build CLI parser for CRSv1."""
+    """构建 CRSv1 命令行参数解析器。"""
 
     parser = argparse.ArgumentParser(
         description="运行 CRSv1 主流程：合同背景抽取、条款切分、多条款审查、批注导出和报告导出。"
@@ -35,7 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    """Run CRSv1 from the command line."""
+    """命令行入口：解析参数并执行 CRSv1 主流程。"""
 
     parser = build_parser()
     args = parser.parse_args()
@@ -46,6 +47,7 @@ def main() -> None:
     if input_value:
         input_path = resolve_optional_path(input_value)
         if input_path.exists():
+            # `--input` 可直接传目录，也可传 run_id 名称。
             word2md_run_root = input_path
             word2md_run_id = input_path.name
         else:

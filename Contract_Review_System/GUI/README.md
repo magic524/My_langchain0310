@@ -1,6 +1,6 @@
-# GUI
+# gui
 
-`Contract_Review_System/GUI` 是合同审查系统的 PyQt 第一版界面。
+`Contract_Review_System/gui` 是合同审查系统的 PyQt 第一版界面。
 
 ## 当前目标
 
@@ -14,7 +14,7 @@
 ## 目录建议
 
 ```text
-GUI/
+gui/
 ├─ README.md
 ├─ __init__.py
 ├─ main.py
@@ -29,7 +29,7 @@ GUI/
 conda activate langchain
 pip install PyQt6
 pip install pdf2docx
-python Contract_Review_System/GUI/main.py
+python Contract_Review_System/gui/main.py
 ```
 
 ## 设计约定

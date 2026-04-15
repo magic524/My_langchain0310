@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from Contract_Review_System.CRSv1.src.crsv1.risk_assembler import (
+from Contract_Review_System.core.v1.src.crsv1.risk_assembler import (
     aggregate_clause_risks,
     build_risk_statistics,
     filter_risks_by_level,
     normalize_display_risk_levels,
 )
-from Contract_Review_System.CRSv1.src.crsv1.runtime_types import ClauseReviewResult, ClauseRisk
+from Contract_Review_System.core.v1.src.crsv1.runtime_types import ClauseReviewResult, ClauseRisk
 
 
 def _risk(risk_id: str, title: str, target_text: str) -> ClauseRisk:

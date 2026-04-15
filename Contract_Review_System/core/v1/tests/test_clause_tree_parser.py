@@ -1,6 +1,6 @@
 ﻿from __future__ import annotations
 
-from Contract_Review_System.CRSv1.src.crsv1.clause_tree_parser import build_review_tasks, parse_clause_tree
+from Contract_Review_System.core.v1.src.crsv1.clause_tree_parser import build_review_tasks, parse_clause_tree
 
 
 def test_parse_clause_tree_preface_and_chinese_top_children() -> None:

@@ -1,7 +1,7 @@
 """Contract_Review_System package entrypoint.
 
 This thin launcher keeps the canonical project entry at the package root
-while delegating the actual GUI startup to `Contract_Review_System.GUI.main`.
+while delegating the actual GUI startup to `Contract_Review_System.gui.main`.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ if str(REPO_ROOT) not in sys.path:
 def main() -> int:
     """Run the default Contract_Review_System launcher."""
 
-    from Contract_Review_System.GUI.main import main as gui_main
+    from Contract_Review_System.gui.main import main as gui_main
 
     return gui_main()
 

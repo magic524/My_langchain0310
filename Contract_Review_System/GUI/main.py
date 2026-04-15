@@ -8,7 +8,7 @@ from pathlib import Path
 
 GUI_ROOT = Path(__file__).resolve().parent
 PROJECT_ROOT = GUI_ROOT.parents[1]
-# 直接运行 `python GUI/main.py` 时，补上项目根目录，确保包内导入稳定可用。
+# 直接运行 `python gui/main.py` 时，补上项目根目录，确保包内导入稳定可用。
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -23,7 +23,7 @@ def main() -> int:
 
     try:
         # CRSv1 GUI 在新窗口模块中实现，入口文件只负责启动和兜底报错。
-        from Contract_Review_System.GUI.qt_app_crsv1 import run
+        from Contract_Review_System.gui.qt_app_crsv1 import run
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1

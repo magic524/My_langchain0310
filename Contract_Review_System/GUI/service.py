@@ -1,8 +1,4 @@
-"""GUI 第一版的服务层。
-
-该模块负责把 GUI 输入转换成生产流水线可接受的参数，
-并将流水线输出裁剪成 GUI 需要展示的最小结果集。
-"""
+"""GUI service layer."""
 
 from __future__ import annotations
 
@@ -11,7 +7,7 @@ from pathlib import Path
 from typing import Callable
 
 from Contract_Review_System.common.local_llm_client import load_runtime_config, resolve_runtime_env_path
-from Contract_Review_System.contract_review_pipeline.src.contract_review_pipeline.pipeline_crsv1 import (
+from Contract_Review_System.pipeline.src.contract_review_pipeline.pipeline_crsv1 import (
     run_contract_review_pipeline,
 )
 
@@ -27,7 +23,7 @@ DEFAULT_WORD2MD_OUTPUT_ROOT = CONTRACT_REVIEW_ROOT / "data" / "contract_review_o
 
 @dataclass(slots=True)
 class GuiReviewRequest:
-    """GUI 采集到的一次审查请求。"""
+    """A single review request from the GUI."""
 
     input_path: str
     review_stance: str
@@ -37,7 +33,7 @@ class GuiReviewRequest:
 
 @dataclass(slots=True)
 class GuiReviewResult:
-    """一次审查的 GUI 展示结果（精简字段）。"""
+    """A minimal result payload for GUI display."""
 
     pipeline_output_dir: str
     primary_comment_file: str
@@ -48,7 +44,7 @@ class GuiReviewResult:
 
 
 class GuiPipelineService:
-    """将 GUI 输入适配到生产流水线的轻量服务层。"""
+    """Adapter layer between GUI input and the production pipeline."""
 
     def __init__(
         self,
@@ -66,7 +62,7 @@ class GuiPipelineService:
         progress_callback: ProgressCallback | None = None,
         log_callback: LogCallback | None = None,
     ) -> GuiReviewResult:
-        """执行一次 GUI 发起的审查任务。"""
+        """Execute one GUI-triggered review task."""
 
         input_path = Path(request.input_path).expanduser().resolve()
         if not input_path.exists():
@@ -76,11 +72,9 @@ class GuiPipelineService:
             msg = f"当前 GUI 仅支持 doc/docx/pdf：{input_path.name}"
             raise ValueError(msg)
 
-        # 每次运行按“文件名”生成默认目录名，并在重名时自动追加序号。
         run_name = self._default_run_name(input_path)
         pipeline_output_dir = self._make_unique_dir(self.output_root / run_name)
 
-        # 复用现有运行时配置加载方式，保证 GUI 与命令行行为一致。
         runtime = load_runtime_config(resolve_runtime_env_path())
 
         result = run_contract_review_pipeline(
@@ -106,14 +100,14 @@ class GuiPipelineService:
 
     @staticmethod
     def _default_run_name(input_path: Path) -> str:
-        """根据输入文件名生成安全的运行目录名。"""
+        """Build a filesystem-safe run directory name from the input file."""
 
         cleaned = "".join(char if char not in '<>:"/\\|?*' else "_" for char in input_path.stem).strip()
         return cleaned.rstrip(".") or "contract_review_run"
 
     @staticmethod
     def _make_unique_dir(base_dir: Path) -> Path:
-        """在目标目录已存在时，返回带递增后缀的新目录路径。"""
+        """Return a unique directory path by appending a numeric suffix if needed."""
 
         if not base_dir.exists():
             return base_dir

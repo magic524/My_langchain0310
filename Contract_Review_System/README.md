@@ -6,9 +6,11 @@
 Contract_Review_System/
 ├─ main.py
 ├─ README.md
-├─ CRSv1/
+├─ core/
+├─ gui/
+├─ pipeline/
 ├─ word2md/
-└─ GUI/
+└─ __init__.py
 ```
 
 ## 环境安装
@@ -37,21 +39,29 @@ pip install -r Contract_Review_System/requirements.txt
 - 输出：统一结构的 `output.md + meta.json + run_summary.json`
 - 默认输出根目录：`data/contract_review_outputs/word2md`
 
-### 2. `CRSv1`
+### 2. `core/v1`
 
 负责正式 v1 审查主链路。
 
 - 输入：某次 `word2md` 结果
 - 输出：`crsv1_result.json`、`risk_statistics.json`、`审查报告.md`、`原合同批注版_CRSv1`
-- 默认输出根目录：`Contract_Review_System/CRSv1/outputs`
+- 默认输出根目录：`Contract_Review_System/core/v1/outputs`
 
-### 3. `GUI`
+### 3. `pipeline`
+
+负责生产流水线编排。
+
+- 输入：单个或多个原合同 `doc/docx/pdf`
+- 输出：`crsv1_result.json`、`审查报告.docx`、批注版 Word、`_artifacts/`
+- 默认输出根目录：`Contract_Review_System/pipeline/outputs`
+
+### 4. `gui`
 
 负责合同审查的桌面操作入口。
 
 - 输入：单个原合同 `doc/docx/pdf`
 - 输出：沿用生产流水线的批注版 Word、审查报告与运行摘要
-- 默认输出根目录：`Contract_Review_System/GUI/outputs`
+- 默认输出根目录：`Contract_Review_System/gui/outputs`
 
 ## 推荐运行顺序
 
@@ -79,11 +89,11 @@ python Contract_Review_System/word2md/main.py `
 - `--input`：原始合同目录，或单个 `doc/docx/pdf` 文件
 - `--output`：本次转换批次名
 
-### 第二步：运行 CRSv1 正式审查链路
+### 第二步：运行 core/v1 正式审查链路
 
 ```powershell
 conda activate CRS
-python Contract_Review_System/CRSv1/main.py `
+python Contract_Review_System/core/v1/main.py `
   --input contract_md_260323 `
   --output 20260408_crsv1
 ```
@@ -100,14 +110,15 @@ conda activate CRS
 
 ## 输出目录约定
 
-现在 `word2md` 转换结果写到 `Contract_Review_System/data/contract_review_outputs/`，`CRSv1` 和 `GUI` 的运行产物都写到各自项目目录下的 `outputs/`，并通过 `.gitignore` 管理。
+现在 `word2md` 转换结果写到 `Contract_Review_System/data/contract_review_outputs/`，`core/v1`、`pipeline` 和 `gui` 的运行产物都写到各自项目目录下的 `outputs/`，并通过 `.gitignore` 管理。
 
 ```text
 Contract_Review_System/data/contract_review_outputs/
 └─ word2md/
 
-Contract_Review_System/CRSv1/outputs/
-Contract_Review_System/GUI/outputs/
+Contract_Review_System/core/v1/outputs/
+Contract_Review_System/pipeline/outputs/
+Contract_Review_System/gui/outputs/
 ```
 
 ## 维护原则

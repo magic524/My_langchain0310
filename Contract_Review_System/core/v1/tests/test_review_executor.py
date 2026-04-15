@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from Contract_Review_System.CRSv1.src.crsv1.review_executor import _extract_json_payload, _normalize_risk_level
+from Contract_Review_System.core.v1.src.crsv1.review_executor import _extract_json_payload, _normalize_risk_level
 
 
 def test_extract_json_payload_prefers_top_level_risks() -> None:

@@ -59,7 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-dir",
         default=str(DEFAULT_OUTPUT_ROOT),
-        help="流水线输出根目录。默认写入 contract_review_pipeline/outputs。",
+        help="流水线输出根目录。默认写入 pipeline/outputs。",
     )
     parser.add_argument(
         "--word2md-output-dir",

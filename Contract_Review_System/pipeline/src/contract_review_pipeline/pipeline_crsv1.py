@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable
 
-from Contract_Review_System.CRSv1.src.crsv1.pipeline import run_crsv1_prediction
+from Contract_Review_System.core.v1.src.crsv1.pipeline import run_crsv1_prediction
 from Contract_Review_System.common.local_llm_client import RuntimeConfig
 from Contract_Review_System.word2md.src.word2md.common import collect_sources, resolve_path
 from Contract_Review_System.word2md.src.word2md.pipeline import run_batch

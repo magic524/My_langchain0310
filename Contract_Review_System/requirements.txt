@@ -1,0 +1,27 @@
+# Contract_Review_System 最小可运行依赖
+#
+# 说明：
+# - 这份文件覆盖 Contract_Review_System 除 only_prompt_local_llm 外的必需功能
+# - GUI 是必需项，直接包含 PyQt6
+# - Windows 下的 Word COM 兜底可选安装 pywin32
+# conda执行：
+#   conda create -n CRS python=3.11 -y
+#   conda activate CRS
+#   pip install -r requirements.txt
+
+
+# DOC/DOCX 解析为 Markdown 的主后端
+mammoth
+
+# PDF -> DOCX 的常用转换后端
+pdf2docx
+
+# PDF 文本抽取兜底，二选一即可，保留两个是为了提高跨环境兼容性
+pypdf
+PyPDF2
+
+# Windows 下的 Word COM 兜底转换能力（可选，但建议保留）
+pywin32; platform_system == "Windows"
+
+# GUI 入口必需
+PyQt6

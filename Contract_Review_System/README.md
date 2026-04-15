@@ -1,15 +1,31 @@
 ﻿# Contract_Review_System
 
-当前合同审查系统当前主线整理为 4 个一级子项目：
+当前合同审查系统主线整理为 3 个一级子项目：
 
 ```text
 Contract_Review_System/
+├─ main.py
 ├─ README.md
 ├─ CRSv1/
 ├─ word2md/
-├─ tests/
-└─ only_prompt_local_llm/
+└─ GUI/
 ```
+
+## 环境安装
+
+先创建并激活独立的 conda 环境，再安装主依赖：
+
+```powershell
+conda create -n CRS python=3.11 -y
+conda activate CRS
+pip install -r Contract_Review_System/requirements.txt
+```
+
+说明：
+
+- 这份 `requirements.txt` 覆盖 `Contract_Review_System` 的必需功能，包含格式转换、GUI 和 Word 批注导出所需依赖。
+- 如果你的终端当前已经在 `Contract_Review_System` 目录下，也可以直接执行 `pip install -r requirements.txt`。
+- 后续所有示例都默认在 `CRS` 环境中运行。
 
 ## 子项目职责
 
@@ -29,28 +45,29 @@ Contract_Review_System/
 - 输出：`crsv1_result.json`、`risk_statistics.json`、`审查报告.md`、`原合同批注版_CRSv1`
 - 默认输出根目录：`Contract_Review_System/CRSv1/outputs`
 
-### 3. `only_prompt_local_llm`
+### 3. `GUI`
 
-负责纯 prompt 的本地模型调用。
+负责合同审查的桌面操作入口。
 
-- 输入：某次 `word2md` 结果
-- 输出：`dataset_with_local_llm.json`、`local_llm_predictions.json`、`原合同批注版_local_llm`
-- 默认输出根目录：`Contract_Review_System/only_prompt_local_llm/outputs`
-
-### 4. `tests`
-
-负责评测、三方对照和总体汇总。
-
-- 输入：`word2md` 数据集，或 `only_prompt_local_llm` 产出的 `dataset_with_local_llm.json`
-- 输出：数据集、评测结果、三方对照、总体汇总
-- 默认输出根目录：`Contract_Review_System/tests/outputs`
+- 输入：单个原合同 `doc/docx/pdf`
+- 输出：沿用生产流水线的批注版 Word、审查报告与运行摘要
+- 默认输出根目录：`Contract_Review_System/GUI/outputs`
 
 ## 推荐运行顺序
 
-### 第一步：格式转换
+### 第一步：启动项目根入口
+
+根目录入口默认启动 GUI：
 
 ```powershell
-conda activate langchain
+conda activate CRS
+python Contract_Review_System/main.py
+```
+
+如需单独运行格式转换：
+
+```powershell
+conda activate CRS
 python Contract_Review_System/word2md/main.py `
   --input data/合同数据-2026.3.12 `
   --recursive `
@@ -62,79 +79,39 @@ python Contract_Review_System/word2md/main.py `
 - `--input`：原始合同目录，或单个 `doc/docx/pdf` 文件
 - `--output`：本次转换批次名
 
-### 第二步：如只做传统评测
-
-先构建数据集：
+### 第二步：运行 CRSv1 正式审查链路
 
 ```powershell
-conda activate langchain
-python Contract_Review_System/tests/scripts/build_dataset.py `
-  --input contract_md_260323 `
-  --output Contract_Review_System/tests/outputs/datasets/dataset_contract_md_260323.json
-```
-
-再执行评测：
-
-```powershell
-conda activate langchain
-python Contract_Review_System/tests/scripts/evaluate.py `
-  --input Contract_Review_System/tests/outputs/datasets/dataset_contract_md_260323.json `
-  --output Contract_Review_System/tests/outputs/eval_runs/contract_md_260323
-```
-
-### 第三步：运行 CRSv1 正式审查链路
-
-```powershell
-conda activate langchain
+conda activate CRS
 python Contract_Review_System/CRSv1/main.py `
   --input contract_md_260323 `
   --output 20260408_crsv1
 ```
 
-### 第四步：如要继续保留旧版纯 prompt 实验链路
-
-先跑本地模型：
-
-```powershell
-conda activate langchain
-python Contract_Review_System/only_prompt_local_llm/main.py `
-  --input contract_md_260323 `
-  --output 20260323_local_llm_only_prompt
-```
-
-再让 `tests` 评测本地模型结果并生成三方对照：
-
-```powershell
-conda activate langchain
-python Contract_Review_System/tests/scripts/evaluate.py `
-  --input Contract_Review_System/only_prompt_local_llm/outputs/20260323_local_llm_only_prompt/dataset_with_local_llm.json `
-  --output Contract_Review_System/tests/outputs/eval_runs/20260323_local_llm_only_prompt
-```
+GUI 已经由根入口 `Contract_Review_System/main.py` 启动。
 
 ## 环境约定
 
 统一使用：
 
 ```powershell
-conda activate langchain
+conda activate CRS
 ```
 
 ## 输出目录约定
 
-现在只有 `word2md` 转换结果写到 `data/contract_review_outputs/`。`tests` 和 `only_prompt_local_llm` 的运行产物都写到各自项目目录下的 `outputs/`，并通过 `.gitignore` 管理。
+现在 `word2md` 转换结果写到 `Contract_Review_System/data/contract_review_outputs/`，`CRSv1` 和 `GUI` 的运行产物都写到各自项目目录下的 `outputs/`，并通过 `.gitignore` 管理。
 
 ```text
-data/contract_review_outputs/
+Contract_Review_System/data/contract_review_outputs/
 └─ word2md/
 
-Contract_Review_System/tests/outputs/
-Contract_Review_System/only_prompt_local_llm/outputs/
 Contract_Review_System/CRSv1/outputs/
+Contract_Review_System/GUI/outputs/
 ```
 
 ## 维护原则
 
 - 代码目录只保留长期维护的主线项目
 - 一次性实验脚本、临时缓存、旧版试验目录应及时移除
-- 历史 `word2md` 结果统一放到 `data/contract_review_outputs/word2md/` 下管理
-- `tests` 和 `only_prompt_local_llm` 的运行产物默认不入库
+- 历史 `word2md` 结果统一放到 `Contract_Review_System/data/contract_review_outputs/word2md/` 下管理

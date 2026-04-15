@@ -64,7 +64,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--word2md-output-dir",
         default=str(DEFAULT_OUTPUT_DIR),
-        help="word2md 输出根目录。默认沿用 data/contract_review_outputs/word2md。",
+        help="word2md 输出根目录。默认沿用 Contract_Review_System/data/contract_review_outputs/word2md。",
     )
     parser.add_argument("--device", default="cpu", help="保留兼容参数，Light 分支下默认使用 `mammoth`。")
     parser.add_argument("--reuse-raw-responses", action="store_true", help="复用已有 raw_responses。")

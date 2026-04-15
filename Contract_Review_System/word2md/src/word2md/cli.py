@@ -16,11 +16,11 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "常用命令示例：\n"
-            "  python main.py --input data/合同数据-2026.3.12 --recursive --output contract_md_260323\n"
-            "  python main.py --input data/.../合同.docx --output my_debug_run\n"
-            "  python main.py --input data/.../合同.pdf --output pdf_debug_run\n"
-            "  python main.py --input data/合同数据-2026.3.12 --recursive "
-            "--output-dir data/contract_review_outputs/word2md\n"
+            "  python main.py --input Contract_Review_System/data/合同数据-2026.3.12 --recursive --output contract_md_260323\n"
+            "  python main.py --input Contract_Review_System/data/.../合同.docx --output my_debug_run\n"
+            "  python main.py --input Contract_Review_System/data/.../合同.pdf --output pdf_debug_run\n"
+            "  python main.py --input Contract_Review_System/data/合同数据-2026.3.12 --recursive "
+            "--output-dir Contract_Review_System/data/contract_review_outputs/word2md\n"
         ),
     )
     parser.add_argument(
@@ -43,7 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output-dir",
         default=str(DEFAULT_OUTPUT_DIR),
-        help="输出根目录。默认写入 `data/contract_review_outputs/word2md`。",
+        help="输出根目录。默认写入 `Contract_Review_System/data/contract_review_outputs/word2md`。",
     )
     parser.add_argument(
         "--history-output-dir",

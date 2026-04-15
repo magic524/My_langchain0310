@@ -21,9 +21,8 @@ LogCallback = Callable[[str], None]
 
 CURRENT_FILE = Path(__file__).resolve()
 CONTRACT_REVIEW_ROOT = CURRENT_FILE.parents[1]
-REPO_ROOT = CURRENT_FILE.parents[2]
 DEFAULT_OUTPUT_ROOT = CONTRACT_REVIEW_ROOT / "outputs"
-DEFAULT_WORD2MD_OUTPUT_ROOT = REPO_ROOT / "data" / "contract_review_outputs" / "word2md"
+DEFAULT_WORD2MD_OUTPUT_ROOT = CONTRACT_REVIEW_ROOT / "data" / "contract_review_outputs" / "word2md"
 
 
 @dataclass(slots=True)

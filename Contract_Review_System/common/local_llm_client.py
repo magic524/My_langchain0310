@@ -16,7 +16,7 @@ DEFAULT_ENV_PATH = CONTRACT_REVIEW_ROOT / ".env"
 
 
 # 这个数据类负责统一保存本地模型运行时所需的配置。
-# 后续 only_prompt_local_llm、search_API 都可以直接复用这份结构。
+# 其它调用层也可以直接复用这份结构。
 @dataclass(slots=True)
 class RuntimeConfig:
     """Shared runtime config for the local LLM client."""

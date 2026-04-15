@@ -7,8 +7,8 @@ from .runtime_types import ContractInputBundle
 
 
 CURRENT_FILE = Path(__file__).resolve()
-REPO_ROOT = CURRENT_FILE.parents[5]
-DEFAULT_WORD2MD_OUTPUT_ROOT = REPO_ROOT / "data" / "contract_review_outputs" / "word2md"
+CONTRACT_REVIEW_ROOT = CURRENT_FILE.parents[3]
+DEFAULT_WORD2MD_OUTPUT_ROOT = CONTRACT_REVIEW_ROOT / "data" / "contract_review_outputs" / "word2md"
 
 
 def resolve_optional_path(path_str: str) -> Path:
@@ -17,7 +17,7 @@ def resolve_optional_path(path_str: str) -> Path:
     candidate = Path(path_str).expanduser()
     if candidate.is_absolute():
         return candidate.resolve()
-    return (REPO_ROOT / candidate).resolve()
+    return (CONTRACT_REVIEW_ROOT / candidate).resolve()
 
 
 def resolve_run_root(run_id: str, *, explicit_run_root: Path | None = None) -> Path:

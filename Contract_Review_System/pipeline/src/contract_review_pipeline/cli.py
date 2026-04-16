@@ -79,6 +79,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="",
         help="附加审查要求，会拼接到本地模型 prompt 中。",
     )
+    parser.add_argument(
+        "--max-workers",
+        default=0,
+        type=int,
+        help="CRSv1 父条款并行数；0 表示按每份合同的条款数自动设置。",
+    )
     return parser
 
 
@@ -105,6 +111,7 @@ def main() -> None:
         reuse_raw_responses=args.reuse_raw_responses,
         review_stance=args.review_stance or None,
         extra_user_instruction=args.extra_user_instruction,
+        max_workers=args.max_workers if args.max_workers > 0 else None,
     )
 
     print(f"pipeline output: {result['pipeline_output_dir']}")

@@ -66,9 +66,9 @@ class PipelineWorker(QObject):
 class ContractReviewMainWindow(QMainWindow):
     """CRSv1 图形界面主窗口，负责输入配置、任务调度与结果展示。"""
 
-    def __init__(self) -> None:
+    def __init__(self, service: GuiPipelineService | None = None) -> None:
         super().__init__()
-        self.service = GuiPipelineService()
+        self.service = service or GuiPipelineService()
         self.worker_thread: QThread | None = None
         self.worker: PipelineWorker | None = None
         self.latest_result: GuiReviewResult | None = None
@@ -331,10 +331,10 @@ class ContractReviewMainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(self.latest_result.pipeline_output_dir))
 
 
-def run() -> int:
+def run(max_workers: int | None = None) -> int:
     app = QApplication([])
     app.setApplicationName("合同审查系统 GUI")
     app.setStyleSheet(APP_STYLESHEET)
-    window = ContractReviewMainWindow()
+    window = ContractReviewMainWindow(GuiPipelineService(max_workers=max_workers))
     window.show()
     return app.exec()

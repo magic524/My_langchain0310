@@ -13,7 +13,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 
-def main() -> int:
+def main(max_workers: int | None = None) -> int:
     """启动 GUI。
 
     该函数只负责两件事：
@@ -27,7 +27,7 @@ def main() -> int:
     except RuntimeError as exc:
         print(str(exc), file=sys.stderr)
         return 1
-    return run()
+    return run(max_workers=max_workers)
 
 
 if __name__ == "__main__":

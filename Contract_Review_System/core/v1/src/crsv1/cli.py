@@ -31,7 +31,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--contract-filter", default="", help="只处理 contract_id 包含指定关键字的合同。")
     parser.add_argument("--review-stance", default="", choices=["", "party_a", "party_b"], help="审查立场。")
     parser.add_argument("--extra-user-instruction", default="", help="用户补充审查要求。")
-    parser.add_argument("--max-workers", default=1, type=int, help="父条款审查任务的最大并发数。")
+    parser.add_argument(
+        "--max-workers",
+        default=0,
+        type=int,
+        help="父条款审查任务的最大并发数；0 表示按条款数自动设置。",
+    )
     return parser
 
 
@@ -78,7 +83,7 @@ def main() -> None:
         contract_filter=args.contract_filter.strip() or None,
         review_stance=args.review_stance or None,
         extra_user_instruction=args.extra_user_instruction.strip(),
-        max_workers=max(1, int(args.max_workers)),
+        max_workers=args.max_workers if args.max_workers > 0 else None,
     )
     print(f"output root: {result['output_dir']}")
     print(f"result json: {result['result_path']}")

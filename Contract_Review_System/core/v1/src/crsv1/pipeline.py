@@ -47,7 +47,7 @@ def run_crsv1_review_for_result(
     extra_user_instruction: str = "",
     display_risk_levels: list[str] | None = None,
     reuse_raw_responses: bool = False,
-    max_workers: int = 1,
+    max_workers: int | None = None,
     progress_callback: ProgressCallback | None = None,
     log_callback: LogCallback | None = None,
 ) -> ContractReviewResult:
@@ -70,6 +70,7 @@ def run_crsv1_review_for_result(
     tasks = build_review_tasks(contract_id, clause_tree)
     if log_callback is not None:
         log_callback(f"CRSv1：条款切分完成：{contract_id}，父条款 {len(tasks)} 个")
+    resolved_max_workers = max(1, int(max_workers)) if max_workers is not None else max(1, len(tasks))
     if progress_callback is not None:
         progress_callback(40, "CRSv1：生成合同背景摘要")
     # 第二步：先抽取全局背景，后续每个父条款审查都复用这份上下文。
@@ -96,7 +97,7 @@ def run_crsv1_review_for_result(
         raw_dir=raw_dir,
         debug_dir=debug_dir,
         reuse_raw_response=reuse_raw_responses,
-        max_workers=max_workers,
+        max_workers=resolved_max_workers,
         progress_callback=(
             (lambda index, total, heading: progress_callback(50 + int(index / max(total, 1) * 20), f"CRSv1：多条款审查 {index}/{total} - {heading}"))
             if progress_callback is not None
@@ -144,7 +145,7 @@ def run_crsv1_prediction(
     review_stance: str | None = None,
     extra_user_instruction: str = "",
     display_risk_levels: list[str] | None = None,
-    max_workers: int = 1,
+    max_workers: int | None = None,
     progress_callback: ProgressCallback | None = None,
     log_callback: LogCallback | None = None,
 ) -> dict[str, str]:
@@ -215,7 +216,7 @@ def run_crsv1_prediction(
             "review_stance": (review_stance or "").strip().lower(),
             "extra_user_instruction": extra_user_instruction.strip(),
             "display_risk_levels": normalize_display_risk_levels(display_risk_levels),
-            "max_workers": max_workers,
+            "max_workers": max_workers if max_workers is not None else "auto",
         },
         warnings=warnings,
         contracts=contracts,

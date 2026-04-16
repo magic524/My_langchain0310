@@ -79,12 +79,6 @@ def _write_artifact_guide(artifact_dir: Path) -> Path:
     return guide_path
 
 
-def _resolve_clause_review_workers(runtime: RuntimeConfig) -> int:
-    """Choose a conservative default for parent-clause parallel review."""
-
-    return max(1, min(4, getattr(runtime, "max_concurrency", 4) or 4))
-
-
 def _resolve_input_mode(input_value: str) -> tuple[str | None, str | None]:
     resolved = resolve_path(input_value)
     if resolved.is_file():
@@ -139,6 +133,7 @@ def run_contract_review_pipeline(
     review_stance: str | None = None,
     extra_user_instruction: str = "",
     display_risk_levels: list[str] | None = None,
+    max_workers: int | None = None,
     progress_callback: ProgressCallback | None = None,
     log_callback: LogCallback | None = None,
 ) -> dict[str, str]:
@@ -159,8 +154,10 @@ def run_contract_review_pipeline(
     _append_log(log_path, f"用户补充提示：{'已填写' if extra_user_instruction.strip() else '未填写'}", log_callback=log_callback)
     _append_log(log_path, f"展示风险等级：{','.join(display_risk_levels or ['missing', 'high', 'low'])}", log_callback=log_callback)
     _append_log(log_path, f"模型请求超时：{runtime.request_timeout_seconds} 秒/次", log_callback=log_callback)
-    clause_review_workers = _resolve_clause_review_workers(runtime)
-    _append_log(log_path, f"父条款并行审查数：{clause_review_workers}", log_callback=log_callback)
+    if max_workers is None:
+        _append_log(log_path, "父条款并行审查数：自动（按每份合同的条款数）", log_callback=log_callback)
+    else:
+        _append_log(log_path, f"父条款并行审查数：{max(1, int(max_workers))}", log_callback=log_callback)
 
     input_file, input_dir = _resolve_input_mode(input_value)
     items = collect_sources(input_file, input_dir, recursive)
@@ -197,7 +194,7 @@ def run_contract_review_pipeline(
         review_stance=review_stance,
         extra_user_instruction=extra_user_instruction,
         display_risk_levels=display_risk_levels,
-        max_workers=clause_review_workers,
+        max_workers=max_workers,
         progress_callback=(
             (lambda value, message: _report_progress(progress_callback, min(95, max(30, value)), message))
             if progress_callback is not None

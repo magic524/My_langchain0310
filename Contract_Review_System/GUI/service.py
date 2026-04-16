@@ -51,9 +51,11 @@ class GuiPipelineService:
         *,
         output_root: Path = DEFAULT_OUTPUT_ROOT,
         word2md_output_root: Path = DEFAULT_WORD2MD_OUTPUT_ROOT,
+        max_workers: int | None = None,
     ) -> None:
         self.output_root = output_root.resolve()
         self.word2md_output_root = word2md_output_root.resolve()
+        self.max_workers = max_workers
 
     def run(
         self,
@@ -86,6 +88,7 @@ class GuiPipelineService:
             review_stance=request.review_stance,
             extra_user_instruction=request.extra_user_instruction,
             display_risk_levels=request.display_risk_levels,
+            max_workers=self.max_workers,
             progress_callback=progress_callback,
             log_callback=log_callback,
         )

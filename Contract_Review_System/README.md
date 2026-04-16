@@ -74,6 +74,13 @@ conda activate CRS
 python Contract_Review_System/main.py
 ```
 
+如需额外指定 CRSv1 父条款并行数，可以这样启动：
+
+```powershell
+conda activate CRS
+python Contract_Review_System/main.py --max-workers 8
+```
+
 如需单独运行格式转换：
 
 ```powershell
@@ -96,6 +103,16 @@ conda activate CRS
 python Contract_Review_System/core/v1/main.py `
   --input contract_md_260323 `
   --output 20260408_crsv1
+```
+
+如需显式指定并行数：
+
+```powershell
+conda activate CRS
+python Contract_Review_System/core/v1/main.py `
+  --input contract_md_260323 `
+  --output 20260408_crsv1 `
+  --max-workers 8
 ```
 
 GUI 已经由根入口 `Contract_Review_System/main.py` 启动。

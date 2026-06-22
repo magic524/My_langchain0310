@@ -54,7 +54,7 @@ jobs:
       version: ${{ steps.check-version.outputs.version }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python + uv
         uses: "./.github/actions/uv_setup"
@@ -105,7 +105,7 @@ jobs:
     outputs:
       release-body: ${{ steps.generate-release-body.outputs.release-body }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           repository: langchain-ai/langchain
           path: langchain
@@ -206,7 +206,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v8
         with:
@@ -237,7 +237,7 @@ jobs:
       contents: read
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # We explicitly *don't* set up caching here. This ensures our tests are
       # maximally sensitive to catching breakage.
@@ -415,7 +415,7 @@ jobs:
       AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT_NAME: ${{ secrets.AZURE_OPENAI_EMBEDDINGS_DEPLOYMENT_NAME }}
       LANGCHAIN_TESTS_USER_AGENT: ${{ secrets.LANGCHAIN_TESTS_USER_AGENT }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       # We implement this conditional as Github Actions does not have good support
       # for conditionally needing steps. https://github.com/actions/runner/issues/491
@@ -498,11 +498,11 @@ jobs:
     # No API keys needed for now - deepagents `make test` only runs unit tests
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           path: langchain
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           repository: ${{ matrix.package.repo }}
           path: ${{ matrix.package.name }}
@@ -559,7 +559,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python + uv
         uses: "./.github/actions/uv_setup"
@@ -601,7 +601,7 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python + uv
         uses: "./.github/actions/uv_setup"
